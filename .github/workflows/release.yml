@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 env:
-  TVDECOMP_COMMIT: TVDECOMP_COMMIT_PLACEHOLDER
+  TVDECOMP_COMMIT: 79549473e10f5d4c58393acf24f116b8355e3585
 
 jobs:
   ipa:
