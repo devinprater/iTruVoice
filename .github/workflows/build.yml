@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
           # gen_data.py imports pefile (only used for its .exe path, but the
           # import is unconditional), so the regen check needs it too.
-          pip3 install --quiet pefile
+          pip3 install --quiet --break-system-packages pefile
           # A stale engine_struct.h or tvdata.s would silently ship the wrong
           # engine, so regeneration is re-run here and must be a no-op.
           bash tools/regen_generated.sh
