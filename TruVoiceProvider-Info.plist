@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundleDisplayName</key>
+    <string>iTruVoice Voices</string>
+    <key>CFBundlePackageType</key>
+    <string>XPC!</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>NSExtension</key>
+    <dict>
+    	<!-- A speech synthesis provider is an Audio Unit extension, so the point
+    	     is com.apple.AudioUnit. Declaring anything else makes the system
+    	     never load it. -->
+    	<key>NSExtensionPointIdentifier</key>
+    	<string>com.apple.AudioUnit</string>
+    	<!-- Must be an AUAudioUnitFactory that vends the unit, not the
+    	     AVSpeechSynthesisProviderAudioUnit subclass itself. A Swift class's
+    	     ObjC name is module-qualified, hence $(PRODUCT_MODULE_NAME). -->
+    	<key>NSExtensionPrincipalClass</key>
+    	<string>TruVoiceProvider.AudioUnitFactory</string>
+    	<key>NSExtensionAttributes</key>
+    	<dict>
+    		<key>AudioComponents</key>
+    		<array>
+    			<dict>
+    				<key>description</key>
+    				<string>Centigram TruVoice voices</string>
+    				<key>manufacturer</key>
+    				<string>DvnP</string>
+    				<key>name</key>
+    				<string>iTruVoice: TruVoice</string>
+    				<key>sandboxSafe</key>
+    				<true/>
+    				<key>subtype</key>
+    				<string>truv</string>
+    				<key>tags</key>
+    				<array>
+    					<string>Speech Synthesizer</string>
+    				</array>
+    				<!-- 'ausp' is kAudioUnitType_SpeechSynthesizer -->
+    				<key>type</key>
+    				<string>ausp</string>
+    				<key>version</key>
+    				<integer>65536</integer>
+    			</dict>
+    		</array>
+    	</dict>
+    </dict>
+</dict>
+</plist>

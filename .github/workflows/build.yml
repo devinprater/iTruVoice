@@ -1,0 +1,81 @@
+name: build
+
+# Everything iOS needs a Mac except the engine proof: the corpus check
+# compiles the pinned C sources for the host with the system compiler, while
+# the app itself is built by xtool (SwiftPM, no Xcode) for the device triple.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Pinned so a change upstream cannot silently alter what ships. Bump
+  # deliberately: move the submodule, re-run tools/regen_generated.sh, record
+  # a new corpus golden, and commit all three together.
+  TVDECOMP_COMMIT: 79549473e10f5d4c58393acf24f116b8355e3585
+  XTOOL_VERSION: 1.19.2
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Upstream is at the pinned commit
+        run: |
+          set -euo pipefail
+          ACTUAL="$(git -C Vendor/upstream rev-parse HEAD)"
+          test "$ACTUAL" = "$TVDECOMP_COMMIT" \
+            || { echo "::error::Vendor/upstream is $ACTUAL, want $TVDECOMP_COMMIT"; exit 1; }
+          echo "upstream at $ACTUAL"
+
+      - name: Committed generated files match the pinned upstream
+        run: |
+          set -euo pipefail
+          # A stale engine_struct.h or tvdata.s would silently ship the wrong
+          # engine, so regeneration is re-run here and must be a no-op.
+          bash tools/regen_generated.sh
+          git status --porcelain -- Vendor/generated \
+            | grep . && { echo "::error::Vendor/generated is stale; run tools/regen_generated.sh and commit"; exit 1; } \
+            || echo "generated files are current"
+
+      - name: Engine corpus check (host, no Xcode)
+        run: |
+          set -euo pipefail
+          python3 tools/corpus_check.py
+
+      - name: Install xtool
+        run: |
+          set -euo pipefail
+          brew install --quiet xtool-org/tap/xtool
+          xtool --version
+
+      - name: Build the app (device triple)
+        run: |
+          set -euo pipefail
+          xtool dev build
+          test -d xtool/*.app || { echo "::error::no .app was produced"; exit 1; }
+
+      - name: Validate the app binary
+        run: |
+          set -euo pipefail
+          APP_BIN="$(find xtool -maxdepth 3 -name iTruVoice -type f | head -1)"
+          test -n "$APP_BIN" || { echo "::error::no app binary found"; exit 1; }
+          echo "binary: $APP_BIN"
+          # The platform must be iOS (device), not simulator or macOS.
+          otool -l "$APP_BIN" | grep -q 'platform 2' \
+            || { echo "::error::binary is not an iOS device binary"; exit 1; }
+          file "$APP_BIN" | grep -q 'arm64' \
+            || { echo "::error::binary is not arm64"; exit 1; }
+          # The engine made it into the link.
+          nm "$APP_BIN" | grep -q 'tvtts_speak_utf8' \
+            || { echo "::error::engine symbols missing from the app"; exit 1; }
+          # The provider extension rode along.
+          test -d xtool/*.app/PlugIns/TruVoiceProvider.appex \
+            || { echo "::error::provider extension not embedded"; exit 1; }
+          echo "app binary is arm64 iOS with the engine linked and the provider embedded"

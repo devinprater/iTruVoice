@@ -1,0 +1,117 @@
+name: release
+
+# Cut a release: build the re-signable .ipa with xtool on a Mac runner and
+# attach it to a GitHub Release.
+#
+# workflow_dispatch builds the .ipa and uploads it as an artifact WITHOUT
+# publishing anything, so the package can be inspected before it goes public.
+# A v* tag builds it and creates the release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  TVDECOMP_COMMIT: 79549473e10f5d4c58393acf24f116b8355e3585
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 90
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Upstream is at the pinned commit
+        run: |
+          set -euo pipefail
+          ACTUAL="$(git -C Vendor/upstream rev-parse HEAD)"
+          test "$ACTUAL" = "$TVDECOMP_COMMIT" \
+            || { echo "::error::Vendor/upstream is $ACTUAL, want $TVDECOMP_COMMIT"; exit 1; }
+
+      - name: Engine corpus check (host, no Xcode)
+        run: |
+          set -euo pipefail
+          # Never ship an .ipa whose engine has not been shown to speak.
+          python3 tools/corpus_check.py
+
+      - name: Install xtool
+        run: |
+          set -euo pipefail
+          brew install --quiet xtool-org/tap/xtool
+          xtool --version
+
+      - name: A release needs its notes file
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          test -f "ReleaseNotes/$TAG.md" \
+            || { echo "::error::ReleaseNotes/$TAG.md is missing"; exit 1; }
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Build the sideloadable .ipa
+        run: |
+          set -euo pipefail
+          xtool dev build --ipa
+          ls -la xtool/*.ipa
+
+      - name: Strip to unsigned, re-signable form
+        run: |
+          set -euo pipefail
+          IPA="$(ls xtool/*.ipa | head -1)"
+          echo "IPA=$IPA" >> "$GITHUB_ENV"
+          WORK="$RUNNER_TEMP/strip"
+          rm -rf "$WORK" && mkdir -p "$WORK"
+          unzip -q "$IPA" -d "$WORK"
+          APP="$(find "$WORK/Payload" -maxdepth 2 -name '*.app' -type d | head -1)"
+          test -n "$APP" || { echo "::error::no .app in the ipa"; exit 1; }
+          # Sideloading tools re-sign with their own identity, so the build's
+          # signature and profile must go: they would only conflict.
+          find "$APP" -name '*.mobileprovision' -delete
+          find "$APP" -name _CodeSignature -type d -prune -exec rm -rf {} +
+          codesign --remove-signature "$APP/TruVoiceProvider.appex" 2>/dev/null || true
+          codesign --remove-signature "$APP/iTruVoice" 2>/dev/null || true
+          (cd "$WORK" && zip -qr "$RUNNER_TEMP/stripped.ipa" Payload)
+          mv "$RUNNER_TEMP/stripped.ipa" "$IPA"
+          echo "stripped to unsigned form: $IPA"
+
+      - name: Verify the .ipa before it goes anywhere
+        run: |
+          set -euo pipefail
+          test -s "$IPA" || { echo "::error::no .ipa was produced"; exit 1; }
+          if unzip -l "$IPA" | grep -q 'embedded.mobileprovision'; then
+            echo "::error::the .ipa carries a provisioning profile; it cannot be re-signed"
+            exit 1
+          fi
+          if unzip -l "$IPA" | grep -q '_CodeSignature'; then
+            echo "::error::the .ipa carries a code signature; it cannot be re-signed"
+            exit 1
+          fi
+          # The provider extension is where the voices come from. An .ipa
+          # without it installs and then has no voices at all.
+          unzip -l "$IPA" | grep -q 'PlugIns/TruVoiceProvider.appex/TruVoiceProvider' \
+            || { echo "::error::the provider extension is not embedded"; exit 1; }
+          echo ".ipa is unsigned, re-signable, and carries the provider"
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # The asset name is fixed so the lookup-verify inside the script holds.
+          DEST="$RUNNER_TEMP/iTruVoice-${TAG#v}-sideload.ipa"
+          cp "$IPA" "$DEST"
+          bash tools/publish_release.sh "$TAG" "$DEST" "ReleaseNotes/$TAG.md"
+
+      - name: Upload the .ipa for inspection
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: itruvoice-ipa
+          path: ${{ env.IPA }}

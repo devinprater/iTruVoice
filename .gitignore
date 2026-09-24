@@ -1,0 +1,6 @@
+.build/
+xtool/
+*.o
+*.ipa
+*.app/
+.DS_Store

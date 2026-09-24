@@ -1,0 +1,9 @@
+Hello world.	13420	8	0
+Hello world. This is TruVoice speaking.	34540	26	0
+The quick brown fox jumps over the lazy dog.	35860	28	0
+Pack my box with five dozen liquor jugs.	37950	30	0
+Peter Piper picked a pepper.	25410	17	0
+She sells seashells by the seashore.	32010	18	0
+The 1997 binary speaks again in portable C.	45210	37	0
+Nine voices deviate from Peter.	27390	22	0
+At 11025 samples per second, quality endures.	49060	39	0

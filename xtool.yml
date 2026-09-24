@@ -1,0 +1,6 @@
+version: 1
+bundleID: com.devin.itruvoice
+product: iTruVoice
+extensions:
+  - product: TruVoiceProvider
+    infoPath: TruVoiceProvider-Info.plist

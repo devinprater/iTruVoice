@@ -1,0 +1,3 @@
+[submodule "Vendor/upstream"]
+	path = Vendor/upstream
+	url = https://github.com/RetroBunn/tv-decomp
