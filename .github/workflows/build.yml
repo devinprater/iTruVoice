@@ -13,7 +13,7 @@ env:
   # Pinned so a change upstream cannot silently alter what ships. Bump
   # deliberately: move the submodule, re-run tools/regen_generated.sh, record
   # a new corpus golden, and commit all three together.
-  TVDECOMP_COMMIT: 79549473e10f5d4c58393acf24f116b8355e3585
+  TVDECOMP_COMMIT: 7954947b0a07de4dc571a1a091eca1a41cb1ecbd
   XTOOL_VERSION: 1.19.2
 
 jobs:
@@ -37,6 +37,9 @@ jobs:
       - name: Committed generated files match the pinned upstream
         run: |
           set -euo pipefail
+          # gen_data.py imports pefile (only used for its .exe path, but the
+          # import is unconditional), so the regen check needs it too.
+          pip3 install --quiet pefile
           # A stale engine_struct.h or tvdata.s would silently ship the wrong
           # engine, so regeneration is re-run here and must be a no-op.
           bash tools/regen_generated.sh
