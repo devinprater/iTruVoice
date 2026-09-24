@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 env:
-  TVDECOMP_COMMIT: 79549473e10f5d4c58393acf24f116b8355e3585
+  TVDECOMP_COMMIT: TVDECOMP_COMMIT_PLACEHOLDER
 
 jobs:
   ipa:
@@ -32,6 +32,14 @@ jobs:
           ACTUAL="$(git -C Vendor/upstream rev-parse HEAD)"
           test "$ACTUAL" = "$TVDECOMP_COMMIT" \
             || { echo "::error::Vendor/upstream is $ACTUAL, want $TVDECOMP_COMMIT"; exit 1; }
+
+      - name: Regen the voice data for this host
+        run: |
+          set -euo pipefail
+          # Same as build.yml: the data image is host-specific, so it is
+          # regenerated here; the corpus check below proves it speaks golden.
+          pip3 install --quiet --break-system-packages pefile
+          bash tools/regen_generated.sh
 
       - name: Engine corpus check (host, no Xcode)
         run: |

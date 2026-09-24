@@ -34,18 +34,23 @@ jobs:
             || { echo "::error::Vendor/upstream is $ACTUAL, want $TVDECOMP_COMMIT"; exit 1; }
           echo "upstream at $ACTUAL"
 
-      - name: Committed generated files match the pinned upstream
+      - name: Regen the voice data, check the struct header is current
         run: |
           set -euo pipefail
           # gen_data.py imports pefile (only used for its .exe path, but the
-          # import is unconditional), so the regen check needs it too.
+          # import is unconditional), so the regen needs it too.
           pip3 install --quiet --break-system-packages pefile
-          # A stale engine_struct.h or tvdata.s would silently ship the wrong
-          # engine, so regeneration is re-run here and must be a no-op.
+          # The data image is laid out using the host linker's object files,
+          # so its bytes legitimately differ between Linux and macOS. It is
+          # regenerated here for the build host, and the corpus check below
+          # proves the result still speaks exactly the golden audio.
+          # engine_struct.h, by contrast, comes only from engine.fields and
+          # must be byte-identical everywhere: a diff here means the committed
+          # generated files are stale.
           bash tools/regen_generated.sh
-          git status --porcelain -- Vendor/generated \
-            | grep . && { echo "::error::Vendor/generated is stale; run tools/regen_generated.sh and commit"; exit 1; } \
-            || echo "generated files are current"
+          git diff --exit-code -- Vendor/generated/engine_struct.h \
+            || { echo "::error::engine_struct.h is stale; run tools/regen_generated.sh and commit"; exit 1; }
+          echo "generated files are current"
 
       - name: Engine corpus check (host, no Xcode)
         run: |

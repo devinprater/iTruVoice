@@ -19,10 +19,13 @@ Melvin, Alex, Wanda and Julia.
   of type `ausp`, subtype `truv`).
 - `Sources/TruVoiceKit` — the Swift bridge over the C engine, shared by both.
 - `Vendor/upstream` — OpenTV pinned as a submodule (currently `7954947`).
-- `Vendor/generated` — `engine_struct.h` and `tvdata.s`, generated from the
-  pinned upstream by `tools/regen_generated.sh` and committed, so a build
-  never depends on codegen running first. Regenerate deliberately when the
-  pin moves.
+- `Vendor/generated` — `engine_struct.h` and `tvdata.s`, produced from the
+  pinned upstream by `tools/regen_generated.sh`. The struct header is pure
+  (byte-identical on every host; CI fails if the committed copy drifts). The
+  data image is laid out with host object files, so its bytes differ between
+  Linux and macOS: the committed copy is the Linux variant, and CI
+  regenerates it for the Mac before building. Either way,
+  `tools/corpus_check.py` proves the result speaks exactly the golden audio.
 - `tools/corpus_check.py` + `tools/corpus.txt` + `tools/corpus_golden.txt` —
   the engine proof on every build: each corpus line must produce non-silent
   audio with exactly the recorded sample count.
