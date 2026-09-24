@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import TruVoiceKit
+import TruVoiceCore
 
 /// Plays engine audio through the app so a voice can be auditioned.
 ///
@@ -31,7 +32,7 @@ final class AudioManager: ObservableObject {
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
     }
 
-    func speak(text: String) {
+    func speak(text: String, rate: Double = 50, pitch: Double = 50) {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         stop()
         lastError = nil
@@ -40,14 +41,18 @@ final class AudioManager: ObservableObject {
             lastError = "The engine did not open."
             return
         }
-        guard let pcm = voice.synthesize(text), !pcm.isEmpty else {
+        voice.setRate(wpm: VoiceParameters.rate(forVoiceOver: rate,
+                                                defaultWPM: voice.defaultRateWPM))
+        voice.setPitch(VoiceParameters.pitch(forVoiceOver: pitch,
+                                             defaultPitch: voice.defaultPitch))
+        guard let uttered = voice.synthesize(text), !uttered.samples.isEmpty else {
             lastError = "The engine produced no audio for that text."
             return
         }
 
         do {
             try startGraphIfNeeded()
-            let buffer = try converted(pcm)
+            let buffer = try converted(uttered.samples)
             playerNode.scheduleBuffer(buffer) { [weak self] in
                 Task { @MainActor [weak self] in
                     self?.isSpeaking = false

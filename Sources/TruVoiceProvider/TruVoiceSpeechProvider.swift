@@ -2,6 +2,7 @@ import AVFoundation
 import AudioToolbox
 import Foundation
 import TruVoiceKit
+import TruVoiceCore
 
 /// The rate this provider declares to the host.
 ///
@@ -17,9 +18,14 @@ private let kOutputSampleRate: Double = 22050.0
 /// runs on another, so the render path never allocates, locks, or blocks:
 /// synthesis and resampling happen up front, and the render block is a copy.
 ///
-/// Version 1 speaks the request's plain text at each voice's default rate and
-/// pitch. VoiceOver's rate and pitch sliders, and SSML prosody, are not
-/// honored yet.
+/// Each SSML speech piece is synthesized on its own with the prosody in force
+/// over it: VoiceOver's rate and pitch sliders arrive as `prosody` elements,
+/// and they are honored per piece through the engine's rate (words per
+/// minute) and absolute pitch. `mark` elements become engine index marks
+/// embedded ahead of the word they precede, so bookmarks report the exact
+/// sample where synthesis reached them. Pauses become silence. A piece at
+/// volume 0 is skipped outright — the engine's own volume is a threshold,
+/// not a scale, so quiet is done as a sample gain instead.
 public final class TruVoiceSpeechProvider: AVSpeechSynthesisProviderAudioUnit {
 
     // MARK: - Render state
@@ -81,10 +87,7 @@ public final class TruVoiceSpeechProvider: AVSpeechSynthesisProviderAudioUnit {
     // MARK: - Requests
 
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
-        guard let voiceIndex = VoiceCatalog.index(from: speechRequest.voice.identifier),
-              let text = Self.plainText(from: speechRequest.ssmlRepresentation),
-              !text.isEmpty
-        else {
+        guard let voiceIndex = VoiceCatalog.index(from: speechRequest.voice.identifier) else {
             clearState()
             return
         }
@@ -93,21 +96,115 @@ public final class TruVoiceSpeechProvider: AVSpeechSynthesisProviderAudioUnit {
             engine = TruVoice(voice: voiceIndex)
             engineVoice = voiceIndex
         }
-        guard let voice = engine,
-              let pcm = voice.synthesize(text), !pcm.isEmpty
-        else {
+        guard let voice = engine else {
             clearState()
             return
         }
 
-        var samples = Self.resample(pcm, from: Double(TruVoice.sampleRate))
+        let parsed = SSMLText.parse(speechRequest.ssmlRepresentation)
+        guard !parsed.pieces.isEmpty else {
+            clearState()
+            return
+        }
+
+        // VoiceOver's neutral is the voice's own defaults, so an untouched
+        // voice sounds untouched.
+        let neutralRate = VoiceParameters.rate(forVoiceOver: 50,
+                                               defaultWPM: voice.defaultRateWPM)
+        let neutralPitch = VoiceParameters.pitch(forVoiceOver: 50,
+                                                 defaultPitch: voice.defaultPitch)
+
+        var samples: [Float] = []
+        var markers: [AVSpeechSynthesisMarker] = []
+        // Bookmarks wait here for the next sounding piece; a mark is embedded
+        // ahead of the word it precedes, never after the last word.
+        var pendingBookmarks: [String] = []
+        var nextMarkID: UInt32 = 1
+        var markNames: [UInt32: String] = [:]
+
+        for piece in parsed.pieces {
+            switch piece {
+            case .speech(let text, let pitch, let rate, let volume):
+                guard !text.isEmpty else { continue }
+
+                let gain = VoiceParameters.gain(forVoiceOver: volume)
+                guard gain > 0 else { continue }   // volume 0: silence
+
+                // Both settings are set every time, so a prosody element that
+                // adjusts only one of them does not inherit the other's
+                // previous value. The engine's settings persist across
+                // utterances, as SAPI's did.
+                voice.setRate(wpm: rate.map {
+                    VoiceParameters.rate(forVoiceOver: Double($0),
+                                         defaultWPM: voice.defaultRateWPM)
+                } ?? neutralRate)
+                voice.setPitch(pitch.map {
+                    VoiceParameters.pitch(forVoiceOver: Double($0),
+                                          defaultPitch: voice.defaultPitch)
+                } ?? neutralPitch)
+
+                // Bookmarks ride ahead of this piece's text as index marks.
+                var markedText = ""
+                var pieceMarkIDs: [UInt32] = []
+                for name in pendingBookmarks {
+                    if let escape = TruVoice.markEscape(id: nextMarkID) {
+                        markedText += escape
+                        markNames[nextMarkID] = name
+                        pieceMarkIDs.append(nextMarkID)
+                        nextMarkID &+= 1
+                    }
+                }
+                pendingBookmarks.removeAll()
+                markedText += text
+
+                guard let uttered = voice.synthesize(markedText),
+                      !uttered.samples.isEmpty else { continue }
+
+                if speechSynthesisOutputMetadataBlock != nil {
+                    let pieceStartBytes = samples.count * 4
+                    markers.append(contentsOf: Self.wordMarkers(in: text,
+                                                                atByteOffset: pieceStartBytes))
+                    for mark in uttered.marks {
+                        guard let name = markNames[mark.id] else { continue }
+                        let outIndex = Self.resampledIndex(engineIndex: mark.samplePosition)
+                        markers.append(AVSpeechSynthesisMarker(
+                            bookmarkName: name,
+                            atByteSampleOffset: pieceStartBytes + outIndex * 4))
+                    }
+                }
+                for id in pieceMarkIDs { markNames.removeValue(forKey: id) }
+                samples.append(contentsOf: Self.resample(uttered.samples,
+                                                         from: Double(TruVoice.sampleRate),
+                                                         gain: gain))
+
+            case .pause(let seconds):
+                // Silence is the only pause available: the engine renders one
+                // utterance at a time and offers no rest primitive.
+                let frames = Int(seconds * kOutputSampleRate)
+                if frames > 0 { samples.append(contentsOf: repeatElement(0, count: frames)) }
+
+            case .bookmark(let name):
+                pendingBookmarks.append(name)
+            }
+        }
+
+        // Bookmarks with no sounding text after them point at the end.
+        if speechSynthesisOutputMetadataBlock != nil {
+            for name in pendingBookmarks {
+                markers.append(AVSpeechSynthesisMarker(bookmarkName: name,
+                                                       atByteSampleOffset: samples.count * 4))
+            }
+        }
+
         guard !samples.isEmpty else {
             clearState()
             return
         }
 
-        if let block = speechSynthesisOutputMetadataBlock {
-            block(Self.wordMarkers(in: text, atByteOffset: 0), speechRequest)
+        // Markers describe positions in the audio, so the host gets them once
+        // the audio they refer to exists.
+        if let block = speechSynthesisOutputMetadataBlock, !markers.isEmpty {
+            block(markers, speechRequest)
         }
 
         let newState = SpeechState(samples: samples)
@@ -126,31 +223,21 @@ public final class TruVoiceSpeechProvider: AVSpeechSynthesisProviderAudioUnit {
         stateLock.unlock()
     }
 
-    /// The request's text with its SSML markup removed.
-    ///
-    /// VoiceOver hands the provider SSML; the engine reads plain text. Tags
-    /// become spaces (so words on either side do not join) and entities are
-    /// decoded, in that order.
-    static func plainText(from ssml: String) -> String? {
-        var text = ssml.replacingOccurrences(of: "<[^>]+>", with: " ",
-                                             options: .regularExpression)
-        text = text.replacingOccurrences(of: "&lt;", with: "<")
-            .replacingOccurrences(of: "&gt;", with: ">")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "&quot;", with: "\"")
-            .replacingOccurrences(of: "&apos;", with: "'")
-        text = text.replacingOccurrences(of: "\\s+", with: " ",
-                                         options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? nil : text
+    /// An engine-sample position as an output-sample index. The resample is
+    /// linear at a fixed ratio, so the mapping is exact: each engine sample
+    /// lands exactly `kOutputSampleRate / TruVoice.sampleRate` outputs on.
+    static func resampledIndex(engineIndex: UInt32) -> Int {
+        Int((Double(engineIndex) * kOutputSampleRate / Double(TruVoice.sampleRate)).rounded())
     }
 
     /// Word markers across `text`, so the host can highlight as it speaks.
     ///
     /// The range is into the text itself, which the system maps back to the
-    /// original markup. The byte offset is where the utterance's audio starts:
-    /// the engine reports no per-word timing, so a more precise number would
-    /// be invented rather than measured.
+    /// original markup. The byte offset is where the piece's audio starts —
+    /// the engine reports no per-word timing of its own, so `mark` bookmarks
+    /// (which do carry exact positions) sit alongside these, not instead.
+    /// The host is documented to accept markers that reference audio not yet
+    /// delivered, so this is within the contract.
     static func wordMarkers(in text: String,
                             atByteOffset startOffset: Int) -> [AVSpeechSynthesisMarker] {
         var markers: [AVSpeechSynthesisMarker] = []
@@ -168,13 +255,15 @@ public final class TruVoiceSpeechProvider: AVSpeechSynthesisProviderAudioUnit {
 
     // MARK: - Resampling
 
-    /// Linear resample from the engine rate to the output rate, done once here
-    /// rather than per frame in the render block.
-    static func resample(_ pcm: [Int16], from sourceRate: Double) -> [Float] {
+    /// Linear resample from the engine rate to the output rate, with a gain
+    /// for the piece's VoiceOver volume. Done once here rather than per frame
+    /// in the render block. Linear interpolation is adequate for speech at
+    /// these rates and leaves the audio thread doing nothing but a copy.
+    static func resample(_ pcm: [Int16], from sourceRate: Double, gain: Float = 1.0) -> [Float] {
         guard !pcm.isEmpty, sourceRate > 0 else { return [] }
 
         let step = sourceRate / kOutputSampleRate
-        if step == 1.0 { return pcm.map { Float($0) / 32768.0 } }
+        if step == 1.0 { return pcm.map { Float($0) / 32768.0 * gain } }
 
         let outputCount = Int(Double(pcm.count) / step)
         guard outputCount > 0 else { return [] }
@@ -185,13 +274,13 @@ public final class TruVoiceSpeechProvider: AVSpeechSynthesisProviderAudioUnit {
             let position = Double(i) * step
             let index = Int(position)
             if index >= lastIndex {
-                output[i] = Float(pcm[lastIndex]) / 32768.0
+                output[i] = Float(pcm[lastIndex]) / 32768.0 * gain
                 continue
             }
             let fraction = Float(position - Double(index))
             let a = Float(pcm[index]) / 32768.0
             let b = Float(pcm[index + 1]) / 32768.0
-            output[i] = a + (b - a) * fraction
+            output[i] = (a + (b - a) * fraction) * gain
         }
         return output
     }

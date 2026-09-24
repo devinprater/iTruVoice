@@ -55,15 +55,35 @@ let package = Package(
     targets: [
         .target(
             name: "iTruVoice",
-            dependencies: ["TruVoiceKit"]
+            dependencies: ["TruVoiceKit", "TruVoiceCore"]
         ),
         .target(
             name: "TruVoiceProvider",
-            dependencies: ["TruVoiceKit"]
+            dependencies: ["TruVoiceKit", "TruVoiceCore"]
         ),
         .target(
             name: "TruVoiceKit",
-            dependencies: ["CTruVoice"]
+            dependencies: ["TruVoiceCore", "CTruVoice"]
+        ),
+        // The SSML and parameter layers, dependency-free on purpose: the
+        // tests build this target alone, so they never touch the C engine or
+        // its assembly data image (which SwiftPM's Linux driver cannot
+        // compile, and which device builds assemble with Apple clang).
+        .target(
+            name: "TruVoiceCore",
+            dependencies: []
+        ),
+        .testTarget(
+            name: "TruVoiceKitTests",
+            dependencies: ["TruVoiceCore"]
+        ),
+        // The executable check harness. `swift run CoreChecks` builds only
+        // this and TruVoiceCore, on Linux and macOS alike; `swift test`
+        // would build the whole package including the C engine, whose data
+        // image SwiftPM's Linux driver cannot assemble.
+        .executableTarget(
+            name: "CoreChecks",
+            dependencies: ["TruVoiceCore"]
         ),
         .target(
             name: "CTruVoice",

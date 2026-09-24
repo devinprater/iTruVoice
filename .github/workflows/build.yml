@@ -57,6 +57,12 @@ jobs:
           set -euo pipefail
           python3 tools/corpus_check.py
 
+      - name: Core checks (SSML, parameters)
+        run: |
+          set -euo pipefail
+          # Builds only CoreChecks and TruVoiceCore, never the C engine.
+          swift run CoreChecks
+
       - name: Install xtool
         run: |
           set -euo pipefail

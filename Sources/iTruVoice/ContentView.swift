@@ -9,6 +9,8 @@ import TruVoiceKit
 struct ContentView: View {
     @StateObject private var audioManager = AudioManager()
     @State private var text: String = VoiceCatalog.sampleText
+    @State private var rate: Double = 50
+    @State private var pitch: Double = 50
 
     var body: some View {
         NavigationStack {
@@ -30,7 +32,7 @@ struct ContentView: View {
                     .accessibilityLabel("Voice")
 
                     Button {
-                        audioManager.speak(text: text)
+                        audioManager.speak(text: text, rate: rate, pitch: pitch)
                     } label: {
                         Label("Speak", systemImage: "play.circle.fill")
                             .frame(minHeight: 44)
@@ -45,6 +47,27 @@ struct ContentView: View {
                     .disabled(!audioManager.isSpeaking)
                 } header: {
                     Text("Test the engine")
+                }
+
+                Section {
+                    Slider(value: $rate, in: 0...100, step: 1) {
+                        Text("Rate")
+                    } minimumValueLabel: {
+                        Text("Slow")
+                    } maximumValueLabel: {
+                        Text("Fast")
+                    }
+                    .accessibilityLabel("Rate")
+                    Slider(value: $pitch, in: 0...100, step: 1) {
+                        Text("Pitch")
+                    } minimumValueLabel: {
+                        Text("Low")
+                    } maximumValueLabel: {
+                        Text("High")
+                    }
+                    .accessibilityLabel("Pitch")
+                } header: {
+                    Text("Voice settings")
                 }
 
                 if let error = audioManager.lastError {
