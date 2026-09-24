@@ -160,20 +160,32 @@ public final class TruVoiceSpeechProvider: AVSpeechSynthesisProviderAudioUnit {
                 guard let uttered = voice.synthesize(markedText),
                       !uttered.samples.isEmpty else { continue }
 
+                // The engine wraps every utterance in ~120 ms of lead and
+                // ~380 ms of tail silence. Left in, each piece junction adds
+                // half a second of dead air — the "long pause" between the
+                // words of one VoiceOver string. Trim to the speech, keeping
+                // enough lead that the first phoneme is not clipped.
+                let gapSamples = Int(VoiceAudio.joinGapSeconds * Double(TruVoice.sampleRate))
+                let voiced = VoiceAudio.voicedRange(uttered.samples, gap: gapSamples)
+
                 if speechSynthesisOutputMetadataBlock != nil {
                     let pieceStartBytes = samples.count * 4
+                    // Marks are engine-sample positions, so they must move by
+                    // the same amount the audio did.
+                    let trim = voiced.lead
                     markers.append(contentsOf: Self.wordMarkers(in: text,
                                                                 atByteOffset: pieceStartBytes))
                     for mark in uttered.marks {
                         guard let name = markNames[mark.id] else { continue }
-                        let outIndex = Self.resampledIndex(engineIndex: mark.samplePosition)
+                        let trimmed = max(0, Int(mark.samplePosition) - trim)
+                        let outIndex = Self.resampledIndex(engineIndex: UInt32(trimmed))
                         markers.append(AVSpeechSynthesisMarker(
                             bookmarkName: name,
                             atByteSampleOffset: pieceStartBytes + outIndex * 4))
                     }
                 }
                 for id in pieceMarkIDs { markNames.removeValue(forKey: id) }
-                samples.append(contentsOf: Self.resample(uttered.samples,
+                samples.append(contentsOf: Self.resample(Array(uttered.samples[voiced.range]),
                                                          from: Double(TruVoice.sampleRate),
                                                          gain: gain))
 
