@@ -34,6 +34,7 @@ ENGINE_SRCS = sorted(
 
 DRIVER = r"""
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "tvtts.h"
 static int on_event(const tvtts_event *ev, void *user) {
