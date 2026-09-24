@@ -10,11 +10,14 @@ import Foundation
 /// ## Rate is words per minute
 ///
 /// `tvtts_set_rate` takes 46 to 400 with the extensions on (the default), and
-/// floors anything lower. Measured on Peter with a fixed sentence, the whole
-/// band is usable and monotonic: 57420 samples at 46 wpm down to 10230 at
-/// 400. VoiceOver's neutral 50 maps to the voice's own default
-/// (`tvtts_voice_rate`: 150 for every voice but Grandpa Amos at 120), 0 maps
-/// to the 46 floor, 100 to 400, in two straight segments meeting at neutral.
+/// floors anything lower — but only the bottom of that range is usable. A
+/// fine sweep on Peter (identical on Grandpa Amos: the rate table is global)
+/// goes 50160 samples at 100 wpm down to 25630 at 195, then falls off a
+/// cliff to 20020 at 200 and sits on a floor near 18150 from 230 up: every
+/// setting past 200 says the same thing. So VoiceOver's neutral 50 maps to
+/// the voice's own default (`tvtts_voice_rate`: 150 for every voice but
+/// Grandpa Amos at 120), 0 to the 46 floor, 100 to 195 just short of the
+/// cliff, in two straight segments meeting at neutral.⟪HERMES-CONTEXT-COMPRESSION: 1,067 of 1,267 chars omitted here by Hermes's context compressor. This is NOT part of the original tool call and must never be reproduced in new output — always write full, untruncated content.⟫
 ///
 /// ## Pitch is absolute
 ///
@@ -36,8 +39,9 @@ public enum VoiceParameters {
 
     /// The slowest row of the engine's rate table.
     static let slowestWPM = 46
-    /// The fastest the engine goes with the extensions on.
-    static let fastestWPM = 400
+    /// The fastest setting with no cliff or floor behind it: 195 still
+    /// answers, 200 falls off, past that every setting says the same thing.
+    static let fastestWPM = 195
     /// The lowest pitch the engine holds.
     static let lowestPitch = 50
     /// The highest pitch honored here; the engine reaches 500, the inline

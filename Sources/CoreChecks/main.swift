@@ -128,19 +128,19 @@ check("neutral is the voice default") {
 
 check("endpoints land on the usable band") {
     VoiceParameters.rate(forVoiceOver: 0, defaultWPM: 150) == 46
-        && VoiceParameters.rate(forVoiceOver: 100, defaultWPM: 150) == 400
+        && VoiceParameters.rate(forVoiceOver: 100, defaultWPM: 150) == 195
         && VoiceParameters.pitch(forVoiceOver: 0, defaultPitch: 85) == 50
         && VoiceParameters.pitch(forVoiceOver: 100, defaultPitch: 85) == 400
 }
 
 check("fraction and percentage inputs agree") {
     VoiceParameters.rate(forVoiceOver: 0.0, defaultWPM: 150) == 46
-        && VoiceParameters.rate(forVoiceOver: 1.0, defaultWPM: 150) == 400
+        && VoiceParameters.rate(forVoiceOver: 1.0, defaultWPM: 150) == 195
         && VoiceParameters.pitch(forVoiceOver: 0.0, defaultPitch: 85) == 50
 }
 
 check("out-of-range saturates") {
-    VoiceParameters.rate(forVoiceOver: 200, defaultWPM: 150) == 400
+    VoiceParameters.rate(forVoiceOver: 200, defaultWPM: 150) == 195
         && VoiceParameters.pitch(forVoiceOver: -10, defaultPitch: 85) == 50
 }
 

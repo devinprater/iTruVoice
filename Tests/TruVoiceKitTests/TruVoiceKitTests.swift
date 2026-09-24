@@ -144,7 +144,7 @@ struct VoiceParametersTests {
     @Test("Endpoints land on the engine's usable band")
     func endpoints() {
         #expect(VoiceParameters.rate(forVoiceOver: 0, defaultWPM: 150) == 46)
-        #expect(VoiceParameters.rate(forVoiceOver: 100, defaultWPM: 150) == 400)
+        #expect(VoiceParameters.rate(forVoiceOver: 100, defaultWPM: 150) == 195)
         #expect(VoiceParameters.pitch(forVoiceOver: 0, defaultPitch: 85) == 50)
         #expect(VoiceParameters.pitch(forVoiceOver: 100, defaultPitch: 85) == 400)
     }
@@ -152,13 +152,13 @@ struct VoiceParametersTests {
     @Test("Fraction and percentage inputs agree")
     func scales() {
         #expect(VoiceParameters.rate(forVoiceOver: 0.0, defaultWPM: 150) == 46)
-        #expect(VoiceParameters.rate(forVoiceOver: 1.0, defaultWPM: 150) == 400)
+        #expect(VoiceParameters.rate(forVoiceOver: 1.0, defaultWPM: 150) == 195)
         #expect(VoiceParameters.pitch(forVoiceOver: 0.0, defaultPitch: 85) == 50)
     }
 
     @Test("Out-of-range values saturate")
     func clamping() {
-        #expect(VoiceParameters.rate(forVoiceOver: 200, defaultWPM: 150) == 400)
+        #expect(VoiceParameters.rate(forVoiceOver: 200, defaultWPM: 150) == 195)
         #expect(VoiceParameters.pitch(forVoiceOver: -10, defaultPitch: 85) == 50)
     }
 
