@@ -92,4 +92,20 @@ jobs:
           # The provider extension rode along.
           test -d xtool/*.app/PlugIns/TruVoiceProvider.appex \
             || { echo "::error::provider extension not embedded"; exit 1; }
+          # The extension must be installable: xtool does not substitute
+          # variables in an extension's plist, so a raw $(...) identifier
+          # ships and installation fails with "not part of the main app
+          # bundle identifier". Literal IDs, prefixed by the app's.
+          APPEX_PLIST="$(echo xtool/*.app/PlugIns/TruVoiceProvider.appex/Info.plist)"
+          APP_PLIST="$(echo xtool/*.app/Info.plist)"
+          if grep -q '\$(' "$APPEX_PLIST"; then
+            echo "::error::extension plist contains unsubstituted variables"
+            exit 1
+          fi
+          APP_ID="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP_PLIST")"
+          EXT_ID="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APPEX_PLIST")"
+          case "$EXT_ID" in
+            "$APP_ID".*) echo "extension $EXT_ID lives under app $APP_ID" ;;
+            *) echo "::error::extension $EXT_ID is not under app $APP_ID"; exit 1 ;;
+          esac
           echo "app binary is arm64 iOS with the engine linked and the provider embedded"

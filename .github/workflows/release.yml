@@ -104,6 +104,23 @@ jobs:
           # without it installs and then has no voices at all.
           unzip -l "$IPA" | grep -q 'PlugIns/TruVoiceProvider.appex/TruVoiceProvider' \
             || { echo "::error::the provider extension is not embedded"; exit 1; }
+          # The extension must be installable (see build.yml): no raw
+          # variables in its plist, and its ID under the app's.
+          PLIST_TMP="$RUNNER_TEMP/appex-plists"
+          rm -rf "$PLIST_TMP" && mkdir -p "$PLIST_TMP"
+          unzip -p "$IPA" 'Payload/*.app/PlugIns/TruVoiceProvider.appex/Info.plist' \
+            > "$PLIST_TMP/appex.plist"
+          unzip -p "$IPA" 'Payload/*.app/Info.plist' > "$PLIST_TMP/app.plist"
+          if grep -q '\$(' "$PLIST_TMP/appex.plist"; then
+            echo "::error::extension plist contains unsubstituted variables"
+            exit 1
+          fi
+          APP_ID="$(plutil -extract CFBundleIdentifier raw -o - "$PLIST_TMP/app.plist")"
+          EXT_ID="$(plutil -extract CFBundleIdentifier raw -o - "$PLIST_TMP/appex.plist")"
+          case "$EXT_ID" in
+            "$APP_ID".*) echo "extension $EXT_ID lives under app $APP_ID" ;;
+            *) echo "::error::extension $EXT_ID is not under app $APP_ID"; exit 1 ;;
+          esac
           echo ".ipa is unsigned, re-signable, and carries the provider"
 
       - name: Publish the release

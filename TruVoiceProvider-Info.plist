@@ -5,13 +5,17 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>$(EXECUTABLE_NAME)</string>
+    <string>TruVoiceProvider</string>
     <key>CFBundleIdentifier</key>
-    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <!-- xtool substitutes variables in the app's own plist but NOT in an
+         extension's: these must be literal. The extension's ID must begin
+         with the app's (com.devin.itruvoice), or installation fails with
+         "not part of the main app bundle identifier". -->
+    <string>com.devin.itruvoice.provider</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>$(PRODUCT_NAME)</string>
+    <string>TruVoiceProvider</string>
     <key>CFBundleDisplayName</key>
     <string>iTruVoice Voices</string>
     <key>CFBundlePackageType</key>
