@@ -21,6 +21,7 @@ struct ContentView: View {
                         .accessibilityLabel("Text to speak")
                 } header: {
                     Text("Preview text")
+                        .textCase(nil)
                 }
 
                 Section {
@@ -47,6 +48,7 @@ struct ContentView: View {
                     .disabled(!audioManager.isSpeaking)
                 } header: {
                     Text("Test the engine")
+                        .textCase(nil)
                 }
 
                 Section {
@@ -68,6 +70,7 @@ struct ContentView: View {
                     .accessibilityLabel("Pitch")
                 } header: {
                     Text("Voice settings")
+                        .textCase(nil)
                 }
 
                 if let error = audioManager.lastError {
@@ -75,6 +78,7 @@ struct ContentView: View {
                         Text(error)
                     } header: {
                         Text("Problem")
+                            .textCase(nil)
                     }
                 }
 
@@ -82,9 +86,32 @@ struct ContentView: View {
                     Text("Install this app, then find Peter, Sidney, Eager Eddie, Deep Douglas, Biff, Grandpa Amos, Melvin, Alex, Wanda and Julia among the English voices in VoiceOver or Spoken Content settings.")
                 } header: {
                     Text("System voices")
+                        .textCase(nil)
+                }
+
+                Section {
+                    Text(Self.versionText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(Self.versionText)
+                } header: {
+                    Text("About")
+                        .textCase(nil)
                 }
             }
             .navigationTitle("iTruVoice")
         }
+    }
+
+    /// What this copy of the app is, so a bug report can name the build.
+    ///
+    /// Read from the bundle rather than written here: a version hard-coded in a
+    /// view goes stale the first time a release is cut, and a wrong version in a
+    /// bug report is worse than none.
+    static var versionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let build = info?["CFBundleVersion"] as? String ?? "unknown"
+        return "Version \(version), build \(build)"
     }
 }

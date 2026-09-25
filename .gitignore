@@ -4,3 +4,7 @@ xtool/
 *.ipa
 *.app/
 .DS_Store
+
+# Python bytecode from the tools/
+__pycache__/
+*.pyc

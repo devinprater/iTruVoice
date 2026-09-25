@@ -84,6 +84,30 @@ jobs:
           find "$APP" -name _CodeSignature -type d -prune -exec rm -rf {} +
           codesign --remove-signature "$APP/TruVoiceProvider.appex" 2>/dev/null || true
           codesign --remove-signature "$APP/iTruVoice" 2>/dev/null || true
+
+          # Stamp the real version, here, while the plists are unpacked and
+          # before the .ipa is put back together. xtool has no version field
+          # (the `version: 1` in xtool.yml is the SCHEMA version), so every
+          # build this repository cut said 1.0.0 (1) while the tags reached
+          # v1.0.3 -- and the About screen reads these two keys, so it
+          # misreported the build to the one user who reports bugs by version.
+          STAMP_TAG="${TAG:-$(git describe --tags --abbrev=0 2>/dev/null || true)}"
+          test -n "$STAMP_TAG" \
+            || { echo "::error::no tag to stamp the version from"; exit 1; }
+          echo "stamping from $STAMP_TAG"
+          python3 tools/stamp_version.py "$APP" --from-tag "$STAMP_TAG"
+
+          # The stamp is what the About screen will show, so prove it landed
+          # rather than assuming the script did something.
+          STAMPED="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+          STAMPED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+          test "$STAMPED" != "1.0.0" \
+            || { echo "::error::the version was not stamped (still 1.0.0)"; exit 1; }
+          APPEX_STAMPED="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/PlugIns/TruVoiceProvider.appex/Info.plist")"
+          test "$APPEX_STAMPED" = "$STAMPED" \
+            || { echo "::error::app is $STAMPED but the extension is $APPEX_STAMPED"; exit 1; }
+          echo "stamped $STAMPED ($STAMPED_BUILD) into the app and the extension"
+
           (cd "$WORK" && zip -qr "$RUNNER_TEMP/stripped.ipa" Payload)
           mv "$RUNNER_TEMP/stripped.ipa" "$IPA"
           echo "stripped to unsigned form: $IPA"

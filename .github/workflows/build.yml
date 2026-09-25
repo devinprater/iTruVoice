@@ -75,6 +75,19 @@ jobs:
           xtool dev build
           test -d xtool/*.app || { echo "::error::no .app was produced"; exit 1; }
 
+      - name: Stamp the version the About screen will show
+        run: |
+          set -euo pipefail
+          # xtool has no version field, so without this the bundle always says
+          # 1.0.0 (1) and the About screen names the wrong build in a bug
+          # report. This workflow builds a branch rather than a tag, so the
+          # version comes from the newest tag and the run number keeps the
+          # build number moving forward.
+          TAG="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
+          python3 tools/stamp_version.py "$(echo xtool/*.app)" --from-tag "$TAG" \
+            --build "${GITHUB_RUN_NUMBER:-0}"
+          /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$(echo xtool/*.app)/Info.plist"
+
       - name: Validate the app binary
         run: |
           set -euo pipefail

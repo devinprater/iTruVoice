@@ -119,6 +119,39 @@ check("commas, dots, numbers and times are untouched") {
         && SSMLText.finish("Call 555 1234", sayAs: nil) == "Call 555 1234"
 }
 
+// MARK: - The ellipsis, and the notification that found it
+
+/// A real notification whose URL iOS truncated with `…`. Reported as "it stops
+/// on the number six", because the last sound before the failure is the six of
+/// `ssi26` and the ellipsis after it produced NOTHING.
+///
+/// Measured against the Keynote engine, which is the same class of machine:
+/// `…` alone is zero samples, and it poisons everything after it, so a sentence
+/// ending in one loses its whole tail. The three-dot form speaks everywhere.
+check("a literal ellipsis is folded to three dots") {
+    SSMLText.finish("accent-ssi26\u{2026}", sayAs: nil) == "accent-ssi26..."
+        && SSMLText.finish("\u{2026}", sayAs: nil) == "..."
+}
+
+check("the notification with the truncated URL survives intact") {
+    let notification =
+        "MONA, 2 hours ago, Tamas G , Alright you peoples, it's here. " +
+        "Accent Mini's voice, under NVDA. The real Accent voice more people " +
+        "remember. eurpod.com/synths/accent-ssi26\u{2026}   button"
+    let out = SSMLText.finish(notification, sayAs: nil)
+    // Every word that matters must still be there, and no ellipsis may remain.
+    return !out.contains("\u{2026}")
+        && out.contains("accent-ssi26...")
+        && out.contains("button")
+        && out.contains("remember.")
+        && out.contains("MONA")
+}
+
+check("the &hellip; entity is folded too") {
+    SSMLText.finish("accent-ssi26&hellip; button", sayAs: nil)
+        == "accent-ssi26... button"
+}
+
 // MARK: - Voice parameters
 
 check("neutral is the voice default") {

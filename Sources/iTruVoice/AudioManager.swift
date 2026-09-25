@@ -45,7 +45,8 @@ final class AudioManager: ObservableObject {
                                                 defaultWPM: voice.defaultRateWPM))
         voice.setPitch(VoiceParameters.pitch(forVoiceOver: pitch,
                                              defaultPitch: voice.defaultPitch))
-        guard let uttered = voice.synthesize(text), !uttered.samples.isEmpty else {
+        guard let uttered = voice.synthesize(SSMLText.finish(text, sayAs: nil)),
+              !uttered.samples.isEmpty else {
             lastError = "The engine produced no audio for that text."
             return
         }
