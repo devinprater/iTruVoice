@@ -154,6 +154,8 @@ check("dictionary respellings replace the engine's guesses") {
         && SSMLText.finish("FWIW", sayAs: nil) == "FWIW"
         && SSMLText.finish("SUV", sayAs: nil) == "SUV"
         && SSMLText.finish("Govt", sayAs: nil) == "Govt"
+        && SSMLText.finish("open SideStore", sayAs: nil) == "open Side Store"
+        && SSMLText.finish("Meet TruVoice", sayAs: nil) == "Meet True Voice"
 }
 
 // MARK: - The ellipsis, and the notification that found it

@@ -3,7 +3,8 @@
 Source: the community profile of eigencrow/IBMTTSDictionaries (the "IBM TTS
 Dictionaries" choice in the Eloquence NVDA add-on), as installed locally:
 `enuroot.dic` (68,380 lines), `enumain.dic` (1,233), `enuabbr.dic` (84).
-German files (`deu*`) are out of scope: TruVoice is an English-only engine.
+German files (`deu*`) are out of scope: this audit covers the English engine's
+readings (the Spanish engine has its own rules and its own future audit).
 
 Every claim below was measured against the vendored engine
 (`Vendor/upstream`, pinned commit) with `text_to_phonemes` traces and

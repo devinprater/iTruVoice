@@ -176,6 +176,11 @@ struct TextPreparationTests {
         #expect(SSMLText.finish("SUV", sayAs: nil) == "SUV")
         #expect(SSMLText.finish("Govt", sayAs: nil) == "Govt")
         #expect(SSMLText.finish("open the Statusbar", sayAs: nil) == "open the Status Bar")
+        // Glued camelCase the LTS reads as one mangled word: "SideStore"
+        // traces SIDSDg1RE ("side-storee", the story rime), "TruVoice"
+        // CsRb1VyS; split, both speak clean.
+        #expect(SSMLText.finish("open SideStore", sayAs: nil) == "open Side Store")
+        #expect(SSMLText.finish("Meet TruVoice", sayAs: nil) == "Meet True Voice")
     }
 }
 
