@@ -27,9 +27,18 @@ ENGINE_SRCS = sorted(
     for f in os.listdir(os.path.join(UP, "src", "engine"))
     if f.endswith(".c")
 ) + [
+    # syn_hifi.c carries the resampled 16 kHz tables (g_synhifi_*) that
+    # synth.c references; api.c carries tvtts_create and the speak entry
+    # points. port/main.c is the upstream CLI and is NOT linked -- drv.c
+    # below provides main. es_stubs.c is ours (ROOT/Vendor): fail-closed
+    # stand-ins for the Spanish backend, which api.c references
+    # unconditionally while iTruVoice ships English only.
+    os.path.join(UP, "src", "syn_hifi.c"),
+    os.path.join(UP, "src", "port", "api.c"),
     os.path.join(UP, "src", "port", "tvtts.c"),
     os.path.join(UP, "src", "port", "msvcrt.c"),
     os.path.join(UP, "src", "port", "stubs.c"),
+    os.path.join(ROOT, "Vendor", "es_stubs.c"),
 ]
 
 DRIVER = r"""

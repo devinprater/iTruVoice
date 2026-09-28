@@ -29,9 +29,16 @@ let engineSources = [
     "upstream/src/engine/track.c",
     "upstream/src/engine/volume.c",
     "upstream/src/engine/vowel.c",
+    // syn_hifi.c carries the resampled 16 kHz tables; api.c carries
+    // tvtts_create and the speak entry points (added upstream 2026-09).
+    "upstream/src/syn_hifi.c",
+    "upstream/src/port/api.c",
     "upstream/src/port/tvtts.c",
     "upstream/src/port/msvcrt.c",
     "upstream/src/port/stubs.c",
+    // English-only build: fail-closed stand-ins for the Spanish backend,
+    // which api.c references unconditionally (see es_stubs.c).
+    "es_stubs.c",
     "generated/tvdata.s",
 ]
 

@@ -12,10 +12,12 @@ trap 'rm -rf "$TMP"' EXIT
 python3 "$UP/tools/gen_struct.py" "$UP/src/engine.fields" "$GEN/engine_struct.h"
 
 gcc -O2 -w -I"$UP/src" -I"$UP/include" -I"$GEN" -c "$UP"/src/engine/*.c \
+  "$UP"/src/syn_hifi.c "$UP"/src/port/api.c \
   "$UP"/src/port/tvtts.c "$UP"/src/port/msvcrt.c "$UP"/src/port/stubs.c \
   --output-dir="$TMP" 2>/dev/null || {
   # Older gcc has no --output-dir: compile file by file.
-  for f in "$UP"/src/engine/*.c "$UP"/src/port/tvtts.c \
+  for f in "$UP"/src/engine/*.c "$UP"/src/syn_hifi.c "$UP"/src/port/api.c \
+           "$UP"/src/port/tvtts.c \
            "$UP"/src/port/msvcrt.c "$UP"/src/port/stubs.c; do
     n=$(basename "$f" .c)
     gcc -O2 -w -I"$UP/src" -I"$UP/include" -I"$GEN" -c "$f" -o "$TMP/$n.o"
