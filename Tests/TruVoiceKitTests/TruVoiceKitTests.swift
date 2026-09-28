@@ -184,6 +184,32 @@ struct TextPreparationTests {
         // Unstressed second syllable reduces ("synctrain" traces
         // Si1~KCsR@N, "trun"); split, both halves keep their stress.
         #expect(SSMLText.finish("open SyncTrain", sayAs: nil) == "open Sync Train")
+        // App and brand names the engine mangles, each verified by trace
+        // and synth: dropped G (Gmail), "I uh" (iOS), "Walm ert"
+        // (Walmart), "dissin" (Dyson), "paple" (PayPal), "low call dvn"
+        // (LocalDevVPN), "oo nee fee" (UniFi), "scree beam" (ScribeMe),
+        // "mayda" (ameta), "yow tib" (YouTube), "air" (Aira), unspelled
+        // GPT (ChatGPT), one-syllable Lire, "door dish" (DoorDash),
+        // "pat ree in" (Patreon), "gith ub" (GitHub), "wats up"
+        // (WhatsApp), "mee uv" (meow).
+        #expect(SSMLText.finish("open Gmail", sayAs: nil) == "open Gee mail")
+        #expect(SSMLText.finish("my iOS device", sayAs: nil) == "my eye oh ess device")
+        #expect(SSMLText.finish("go to Walmart", sayAs: nil) == "go to Wall mart")
+        #expect(SSMLText.finish("my Dyson", sayAs: nil) == "my Die son")
+        #expect(SSMLText.finish("open PayPal", sayAs: nil) == "open Pay Pal")
+        #expect(SSMLText.finish("join LocalDevVPN", sayAs: nil) == "join Local Dev VPN")
+        #expect(SSMLText.finish("open UniFi", sayAs: nil) == "open You Nuh Fye")
+        #expect(SSMLText.finish("open ScribeMe", sayAs: nil) == "open Scribe Me")
+        #expect(SSMLText.finish("open ameta", sayAs: nil) == "open ah met ah")
+        #expect(SSMLText.finish("open YouTube", sayAs: nil) == "open You Tube")
+        #expect(SSMLText.finish("call Aira", sayAs: nil) == "call Ira")
+        #expect(SSMLText.finish("open ChatGPT", sayAs: nil) == "open Chat G P T")
+        #expect(SSMLText.finish("open Lire", sayAs: nil) == "open lee-ray")
+        #expect(SSMLText.finish("order DoorDash", sayAs: nil) == "order Door Dash")
+        #expect(SSMLText.finish("my Patreon", sayAs: nil) == "my Pay tree on")
+        #expect(SSMLText.finish("open GitHub", sayAs: nil) == "open Git Hub")
+        #expect(SSMLText.finish("open WhatsApp", sayAs: nil) == "open Whats App")
+        #expect(SSMLText.finish("says meow", sayAs: nil) == "says mee ow")
     }
 }
 
