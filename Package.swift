@@ -36,10 +36,18 @@ let engineSources = [
     "upstream/src/port/tvtts.c",
     "upstream/src/port/msvcrt.c",
     "upstream/src/port/stubs.c",
-    // English-only build: fail-closed stand-ins for the Spanish backend,
-    // which api.c references unconditionally (see es_stubs.c).
-    "es_stubs.c",
     "generated/tvdata.s",
+]
+
+// The Spanish engine: same library, every name es_-prefixed. The rename
+// header (Vendor/generated/es_rename.h) must be force-included into exactly
+// these translation units -- a global -include would rename the English
+// Engine_Feed too, which is why Spanish is its own target. Directory
+// entries expand to their .c files; headers ride along untouched.
+let spanishSources = [
+    "upstream/es",
+    "upstream/es_port",
+    "generated/tvdata_es.s",
 ]
 
 let package = Package(
@@ -94,12 +102,31 @@ let package = Package(
         ),
         .target(
             name: "CTruVoice",
+            dependencies: ["CTruVoiceES"],
             path: "Vendor",
             sources: engineSources,
             publicHeadersPath: "upstream/include",
             cSettings: [
                 .headerSearchPath("upstream/src"),
                 .headerSearchPath("generated"),
+            ]
+        ),
+        // The Spanish engine, linked into the same library. Own target so
+        // the rename force-include touches only its files. unsafeFlags is
+        // fine here: this package is built directly (never taken as a
+        // dependency), and -include resolves es_rename.h through the
+        // generated/ search path below, the same lookup the Linux and
+        // Xcode drivers both perform.
+        .target(
+            name: "CTruVoiceES",
+            path: "Vendor",
+            sources: spanishSources,
+            cSettings: [
+                .headerSearchPath("upstream/es"),
+                .headerSearchPath("upstream/src"),
+                .headerSearchPath("upstream/include"),
+                .headerSearchPath("generated"),
+                .unsafeFlags(["-include", "es_rename.h"]),
             ]
         ),
     ]

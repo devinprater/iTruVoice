@@ -38,8 +38,18 @@ ENGINE_SRCS = sorted(
     os.path.join(UP, "src", "port", "tvtts.c"),
     os.path.join(UP, "src", "port", "msvcrt.c"),
     os.path.join(UP, "src", "port", "stubs.c"),
-    os.path.join(ROOT, "Vendor", "es_stubs.c"),
 ]
+
+# The Spanish engine, compiled es_-prefixed exactly like the regen script
+# and the CTruVoiceES target do: -I upstream/es plus the generated rename
+# header force-included. Object names prefixed: engine.c exists in both
+# trees.
+ES_SRCS = sorted(
+    os.path.join(UP, d, f)
+    for d in ("es", "es_port")
+    for f in os.listdir(os.path.join(UP, d))
+    if f.endswith(".c")
+)
 
 DRIVER = r"""
 #include <stdio.h>
@@ -97,6 +107,22 @@ def build(workdir):
     subprocess.run(["cc", "-w", "-c", os.path.join(GEN, "tvdata.s"),
                     "-o", os.path.join(objdir, "tvdata.o")], check=True)
     objs.append(os.path.join(objdir, "tvdata.o"))
+    # Spanish: same objects the regen script feeds gen_data, plus its own
+    # image. The rename header is generated and committed by regen.
+    for src in ES_SRCS:
+        obj = os.path.join(objdir, "es_" + os.path.basename(src) + ".o")
+        subprocess.run(
+            ["cc", "-O2", "-w", "-I", os.path.join(UP, "es"),
+             "-I", os.path.join(UP, "src"),
+             "-I", os.path.join(UP, "include"), "-I", GEN,
+             "-include", os.path.join(GEN, "es_rename.h"),
+             "-c", src, "-o", obj],
+            check=True,
+        )
+        objs.append(obj)
+    subprocess.run(["cc", "-w", "-c", os.path.join(GEN, "tvdata_es.s"),
+                    "-o", os.path.join(objdir, "tvdata_es.o")], check=True)
+    objs.append(os.path.join(objdir, "tvdata_es.o"))
     drv = os.path.join(workdir, "drv.c")
     with open(drv, "w") as f:
         f.write(DRIVER)
