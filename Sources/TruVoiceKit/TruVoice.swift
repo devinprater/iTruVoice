@@ -170,6 +170,47 @@ public final class TruVoice {
         // ("DYE SUN", the star). "DI1S@N" keeps dye stressed and the second
         // syllable reduced -- trace shows it in-sentence, ASR hears Dyson.
         ("dyson", "DI1S@N"),
+        // App and brand names as single stressed words: the text
+        // respelling splits the stress ("DYE SUN", "pay PAL") or drops
+        // sounds (Gmail's G, hub's H after t). Each value is the
+        // prescription's own `text_to_phonemes` output, installed and
+        // verified in-sentence; see the batch notes below.
+        // "Gee mail" as one word (native drops the G entirely).
+        ("gmail", "JzE1MA1j"),
+        // "eye oh ess" as one word (native "I uh").
+        ("ios", "I1O1e1S"),
+        // "Wall mart" as one word (native "Walm ert").
+        ("walmart", "Ww1jMr1Tp"),
+        // "Pay Pal" as one word (native "paple").
+        ("paypal", "PA1Pa1j"),
+        // "Local Dev VPN" as one word (native "low call dvn").
+        ("localdevvpn", "LO1K@jDe1FVE1PE1e1N"),
+        // "You Nuh Fye" as one word (native "oo nee fee"; "Nigh Fye"
+        // runs together as "knife").
+        ("unifi", "%YbNv1FI1"),
+        // "Scribe Me" as one word (native "scree beam").
+        ("scribeme", "SKRI1B%ME"),
+        // "ah met ah" as one word (native "mayda").
+        ("ameta", "o1Me1to1"),
+        // "You Tube" as one word (native "yow tib").
+        ("youtube", "%YbTb1Bp"),
+        // The name Ira ("eye-ruh"; native "air").
+        ("aira", "I1R@"),
+        // "lee-ray" in one token (native one syllable; "leeray"
+        // re-syllabifies to "littery").
+        ("lire", "LE1RA1"),
+        // "Door Dash" as one word (native "door dish").
+        ("doordash", "Dg1Da1s"),
+        // "Pay tree on" as one word (native "pat ree in").
+        ("patreon", "PA1CsRE1%oN"),
+        // "Whats App" as one word (native "wats up").
+        ("whatsapp", "Wv1TSa1Pp"),
+        // "mee oh" as one word (native "mee uv").
+        ("meow", "ME1O1"),
+        // "Side Store" as one word (native "side-storee").
+        ("sidestore", "SI1DSDg1"),
+        // "Sync Train" as one word (unstressed "train" reduces to "trun").
+        ("synctrain", "Si1~KCsRA1N"),
         // Dictionary respellings (IBM TTS dictionary, community profile)
         // whose single-word prescriptions verify byte-identical through the
         // lexicon: speaking the key with the entry is the same samples,

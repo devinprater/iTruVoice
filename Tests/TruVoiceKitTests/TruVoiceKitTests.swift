@@ -177,38 +177,15 @@ struct TextPreparationTests {
         #expect(SSMLText.finish("Govt", sayAs: nil) == "Govt")
         #expect(SSMLText.finish("open the Statusbar", sayAs: nil) == "open the Status Bar")
         // Glued camelCase the LTS reads as one mangled word: "SideStore"
-        // traces SIDSDg1RE ("side-storee", the story rime), "TruVoice"
-        // CsRb1VyS; split, both speak clean.
-        #expect(SSMLText.finish("open SideStore", sayAs: nil) == "open Side Store")
-        #expect(SSMLText.finish("Meet TruVoice", sayAs: nil) == "Meet True Voice")
-        // Unstressed second syllable reduces ("synctrain" traces
-        // Si1~KCsR@N, "trun"); split, both halves keep their stress.
-        #expect(SSMLText.finish("open SyncTrain", sayAs: nil) == "open Sync Train")
-        // App and brand names the engine mangles, each verified by trace
-        // and synth: dropped G (Gmail), "I uh" (iOS), "Walm ert"
-        // (Walmart), "paple" (PayPal), "low call dvn"
-        // (LocalDevVPN), "oo nee fee" (UniFi), "scree beam" (ScribeMe),
-        // "mayda" (ameta), "yow tib" (YouTube), "air" (Aira), unspelled
-        // GPT (ChatGPT), one-syllable Lire, "door dish" (DoorDash),
-        // "pat ree in" (Patreon), "gith ub" (GitHub), "wats up"
-        // (WhatsApp), "mee uv" (meow).
-        #expect(SSMLText.finish("open Gmail", sayAs: nil) == "open Gee mail")
-        #expect(SSMLText.finish("my iOS device", sayAs: nil) == "my eye oh ess device")
-        #expect(SSMLText.finish("go to Walmart", sayAs: nil) == "go to Wall mart")
-        #expect(SSMLText.finish("open PayPal", sayAs: nil) == "open Pay Pal")
-        #expect(SSMLText.finish("join LocalDevVPN", sayAs: nil) == "join Local Dev VPN")
-        #expect(SSMLText.finish("open UniFi", sayAs: nil) == "open You Nuh Fye")
-        #expect(SSMLText.finish("open ScribeMe", sayAs: nil) == "open Scribe Me")
-        #expect(SSMLText.finish("open ameta", sayAs: nil) == "open ah met ah")
-        #expect(SSMLText.finish("open YouTube", sayAs: nil) == "open You Tube")
-        #expect(SSMLText.finish("call Aira", sayAs: nil) == "call Ira")
+        // traces SIDSDg1RE ("side-storee", the story rime). Fixed at the
+        // phoneme level now (lexicon "SI1DSDg1"); "TruVoice" reverted --
+        // its glued trace is the natural compound stress, never reported
+        // broken. Spelled-out GPT keeps its word breaks (a single lexicon
+        // word runs the letters together); the comma in "Git, Hub" is the
+        // only construction whose H survives (t+h drops it, the lexicon
+        // parser eats H outright).
         #expect(SSMLText.finish("open ChatGPT", sayAs: nil) == "open Chat G P T")
-        #expect(SSMLText.finish("open Lire", sayAs: nil) == "open lee-ray")
-        #expect(SSMLText.finish("order DoorDash", sayAs: nil) == "order Door Dash")
-        #expect(SSMLText.finish("my Patreon", sayAs: nil) == "my Pay tree on")
-        #expect(SSMLText.finish("open GitHub", sayAs: nil) == "open Git Hub")
-        #expect(SSMLText.finish("open WhatsApp", sayAs: nil) == "open Whats App")
-        #expect(SSMLText.finish("says meow", sayAs: nil) == "says mee ow")
+        #expect(SSMLText.finish("open GitHub", sayAs: nil) == "open Git, Hub")
     }
 }
 
