@@ -32,10 +32,12 @@ import Foundation
 /// Letter dots become the word "dot" and "@" becomes "at" (see
 /// `expandDotsAndAt`); digit dots, abbreviation chains and "://" hosts
 /// already read correctly and are left alone. Acronyms the engine would
-/// read as one word ("aidb" as `A1DB`, "ai" as "aye") are uppercased for
-/// the front end's all-caps spell-out (see `expandAcronyms`); per-word
-/// mispronunciations that need exact phonemes ("repo" as "REH-po") live in
-/// the engine's user lexicon instead (see `TruVoice.ensurePronunciationFixes`).
+/// read as one word ("aidb" as `A1DB`) are uppercased for the front end's
+/// all-caps spell-out (see `expandAcronyms`); dictionary respellings the
+/// engine speaks verbatim ("Fwiw" as "for what it's worth") are substituted
+/// whole-word (see `applyDictionary`); per-word mispronunciations that need
+/// exact phonemes ("repo" as "REH-po") live in the engine's user lexicon
+/// instead (see `TruVoice.ensurePronunciationFixes`).
 ///
 /// What TruVoice does need is the fold: it reads a
 /// single-byte code page, so curly quotes, emoji-adjacent punctuation and
@@ -418,6 +420,10 @@ public enum SSMLText {
         // spaces would not match a whole word anyway, and its lowercase
         // letters must keep their names.
         text = expandAcronyms(text)
+        // After acronyms, so a dictionary replacement never re-triggers one,
+        // and before dots, so a replacement's own dots ("open SSL" has none,
+        // but the rule is uniform) pass through the same exemptions.
+        text = applyDictionary(text)
         // After acronyms, so an uppercased domain label ("AIDB.org") still
         // gets its dot said.
         text = expandDotsAndAt(text)
@@ -540,18 +546,18 @@ public enum SSMLText {
     /// Says acronyms the engine would read as one word.
     ///
     /// The front end spells an ALL-CAPS run letter by letter -- measured,
-    /// "AIDB" reads `A1&I1&DE1&BE1` and "AI" reads `A1&I1` -- while the
-    /// lowercase forms read as words ("aidb" is `A1DB`, "ai" is `A1`,
-    /// "aye"). Uppercasing the word therefore hands the engine a reading it
-    /// already gets right, with no phoneme strings to carry. Whole-word and
-    /// case-insensitive, longest first, so "AIDBS" settles before "AIDB" and
-    /// neither fires inside a longer word ("said", "air" and "aid" are
-    /// untouched).
+    /// "AIDB" reads `A1&I1&DE1&BE1` -- while the lowercase form reads as a
+    /// word ("aidb" is `A1DB`). Uppercasing the word therefore hands the
+    /// engine a reading it already gets right, with no phoneme strings to
+    /// carry. Whole-word and case-insensitive, longest first, so "AIDBS"
+    /// settles before "AIDB" and neither fires inside a longer word.
     ///
-    /// A lexicon entry cannot do this instead: the caps reading's `&`
-    /// separators speak different audio through the lexicon (garbage nodes),
-    /// and without them the letters blend into one word. Both measured; see
-    /// `TruVoice.lexiconEntries`.
+    /// Letter-words the dictionary prescribes ("ai", "Ai") are NOT here --
+    /// they live in `dictionaryTable` under the dictionary's exact
+    /// respellings. A lexicon entry cannot do this instead: the caps
+    /// reading's `&` separators speak different audio through the lexicon
+    /// (garbage nodes), and without them the letters blend into one word.
+    /// Both measured; see `TruVoice.lexiconEntries`.
     public static func expandAcronyms(_ text: String) -> String {
         var result = text
         for (term, replacement) in acronyms {
@@ -570,8 +576,37 @@ public enum SSMLText {
     private static let acronyms: [(term: String, replacement: String)] = [
         ("aidbs", "AIDBS"),
         ("aidb", "AIDB"),
-        ("ai", "AI"),
     ]
+
+    /// Says the dictionary's respellings instead of the engine's guesses.
+    ///
+    /// The IBM TTS dictionary (the community profile behind the Eloquence
+    /// NVDA add-on) respells the words Eloquence gets wrong -- abbreviations
+    /// ("Govt" is "Government" only through the lexicon; here "Fwiw" is
+    /// "for what it's worth"), brands ("Airbnb" is "Air bea en bea"),
+    /// units ("Mbps" is "megabits per second") and numerals ("VII's" is
+    /// "seven's"). TruVoice's LTS makes the same class of guess, so the
+    /// respelling is the prescription: every replacement in
+    /// `dictionaryTable` was synthesised and speaks on the vendored engine.
+    ///
+    /// Whole-word and case-sensitive, longest term first -- the dictionary
+    /// is explicit about casing ("Fwiw" and "fwiw" are separate rows), and
+    /// an all-caps form is never listed, so a spelled initial ("FWIW",
+    /// "SUV") keeps the front end's letter-by-letter reading. Single-word
+    /// respellings that verify byte-identical through the user lexicon live
+    /// there instead (see `TruVoice.lexiconEntries`).
+    public static func applyDictionary(_ text: String) -> String {
+        var result = text
+        for (term, replacement) in dictionaryTable {
+            guard result.range(of: term) != nil else { continue }
+            let pattern = "\\b" + NSRegularExpression.escapedPattern(for: term) + "\\b"
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+            let range = NSRange(result.startIndex..., in: result)
+            result = regex.stringByReplacingMatches(in: result, options: [],
+                                                    range: range, withTemplate: replacement)
+        }
+        return result
+    }
 
     /// Says email addresses and domains the way they are written.
     ///

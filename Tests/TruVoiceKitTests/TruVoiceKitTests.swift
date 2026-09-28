@@ -129,7 +129,7 @@ struct TextPreparationTests {
         // The engine drops dots with no sound of their own ("claude.ai"
         // reads "claude aye"), so letter dots become the word -- while
         // digit dots, abbreviations and URL hosts already read correctly.
-        #expect(SSMLText.finish("claude.ai", sayAs: nil) == "claude dot AI")
+        #expect(SSMLText.finish("claude.ai", sayAs: nil) == "claude dot aigh igh")
         #expect(SSMLText.finish("visit google.com today", sayAs: nil) == "visit google dot com today")
         #expect(SSMLText.finish("Visit example.com.", sayAs: nil) == "Visit example dot com.")
         #expect(SSMLText.finish("e.g.", sayAs: nil) == "e.g.")
@@ -148,11 +148,34 @@ struct TextPreparationTests {
                 == "write to bob at example dot com today")
         // The front end spells all-caps runs; lowercase would read as words.
         #expect(SSMLText.finish("aidb", sayAs: nil) == "AIDB")
-        #expect(SSMLText.finish("ai", sayAs: nil) == "AI")
         #expect(SSMLText.finish("said the aid to air", sayAs: nil) == "said the aid to air")
         // "repo" keeps its spelling here: its fix is exact phonemes in the
         // engine's user lexicon, measured against the engine.
         #expect(SSMLText.finish("about the repo", sayAs: nil) == "about the repo")
+    }
+
+    @Test("Dictionary respellings replace the engine's guesses")
+    func dictionary() {
+        // Abbreviations, brands, units and numerals from the IBM TTS
+        // dictionary (community profile): the replacement is the
+        // dictionary's own prescription, verified to speak on the engine.
+        #expect(SSMLText.finish("Fwiw", sayAs: nil) == "for what it's worth")
+        #expect(SSMLText.finish("fwiw", sayAs: nil) == "for what it's worth")
+        #expect(SSMLText.finish("Airbnb", sayAs: nil) == "Air bea en bea")
+        #expect(SSMLText.finish("my Mbps plan", sayAs: nil) == "my megabits per second plan")
+        #expect(SSMLText.finish("set a tabindex", sayAs: nil) == "set a Tab Index")
+        #expect(SSMLText.finish("omg", sayAs: nil) == "oe em jee")
+        #expect(SSMLText.finish("Ai", sayAs: nil) == "ay igh")
+        #expect(SSMLText.finish("ai", sayAs: nil) == "aigh igh")
+        #expect(SSMLText.finish("the Sen voted", sayAs: nil) == "the senator voted")
+        #expect(SSMLText.finish("VIII's", sayAs: nil) == "eight's")
+        // The dictionary is explicit about casing: an all-caps form keeps
+        // the front end's letter-by-letter reading, and a lexicon word keeps
+        // its spelling here (its fix is engine phonemes, not text).
+        #expect(SSMLText.finish("FWIW", sayAs: nil) == "FWIW")
+        #expect(SSMLText.finish("SUV", sayAs: nil) == "SUV")
+        #expect(SSMLText.finish("Govt", sayAs: nil) == "Govt")
+        #expect(SSMLText.finish("open the Statusbar", sayAs: nil) == "open the Status Bar")
     }
 }
 

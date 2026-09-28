@@ -145,6 +145,34 @@ public final class TruVoice {
         // byte-identical both ways (see above).
         ("repo", "RE1PO"),
         ("repos", "RE1POS"),
+        // Dictionary respellings (IBM TTS dictionary, community profile)
+        // whose single-word prescriptions verify byte-identical through the
+        // lexicon: speaking the key with the entry is the same samples,
+        // same hash as speaking the respelling without it. Each value is
+        // the engine's own `text_to_phonemes` output for the respelling,
+        // sentence markers stripped. Longer words go through the text layer
+        // instead (`SSMLText.applyDictionary`): same phonemes through the
+        // lexicon render slightly different audio than the natural word
+        // (boundary context), while the text substitution speaks the
+        // dictionary's audio exactly. Measured per entry; see
+        // tools/dict_audit/README.md.
+        ("govt", "Gv1V3M|NTp"),
+        ("avg", "a1VR|Jz"),
+        ("incl", "|~KLb1t|~p"),
+        // "January" natives stress on "NY"; kept as the engine's own
+        // reading (byte-identical to it), which still beats "jan".
+        ("jan", "Jza1NYbkE"),
+        ("inorg", "i2NgGa1N|Kp"),
+        ("qty", "KWo1NT|tE"),
+        ("esc", "|SGA1Pp"),
+        ("oceanog", "o2SENo1GR|FE"),
+        ("cnet", "SE1N|Tp"),
+        ("xi", "sE1"),
+        ("suu", "Sb1"),
+        ("kyi", "CsE1"),
+        ("uni", "Yb1NE"),
+        ("jos", "Jzw1S"),
+        ("vypr", "VI1P3"),
     ]
 
     /// Installs `lexiconEntries` once per process.
@@ -165,7 +193,10 @@ public final class TruVoice {
         defer { lexiconLock.unlock() }
         guard !lexiconInstalled else { return }
         lexiconInstalled = true
-        for entry in lexiconEntries {
+        // Hand entries first, then machine-verified stress fixes (disjoint
+        // keys, checked at generation). Together they stay under the
+        // engine's 5,000-entry user-lexicon cap.
+        for entry in lexiconEntries + generatedLexiconEntries {
             entry.word.withCString { wordCString in
                 entry.phonemes.withCString { phonemesCString in
                     _ = tvtts_add_lexicon(wordCString, phonemesCString)

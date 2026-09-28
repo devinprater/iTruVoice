@@ -119,7 +119,7 @@ check("commas, numbers and times are untouched; dots say dot") {
         // The engine drops dots with no sound of their own ("claude.ai"
         // reads "claude aye"), so letter dots become the word -- while
         // digit dots, abbreviations and URL hosts already read correctly.
-        && SSMLText.finish("claude.ai", sayAs: nil) == "claude dot AI"
+        && SSMLText.finish("claude.ai", sayAs: nil) == "claude dot aigh igh"
         && SSMLText.finish("visit google.com today", sayAs: nil) == "visit google dot com today"
         && SSMLText.finish("Visit example.com.", sayAs: nil) == "Visit example dot com."
         && SSMLText.finish("e.g.", sayAs: nil) == "e.g."
@@ -137,11 +137,23 @@ check("addresses are heard complete, acronyms as letters") {
         == "write to bob at example dot com today"
         // The front end spells all-caps runs; lowercase would read as words.
         && SSMLText.finish("aidb", sayAs: nil) == "AIDB"
-        && SSMLText.finish("ai", sayAs: nil) == "AI"
         && SSMLText.finish("said the aid to air", sayAs: nil) == "said the aid to air"
         // "repo" keeps its spelling here: its fix is exact phonemes in the
         // engine's user lexicon, measured against the engine.
         && SSMLText.finish("about the repo", sayAs: nil) == "about the repo"
+}
+
+check("dictionary respellings replace the engine's guesses") {
+    SSMLText.finish("Fwiw", sayAs: nil) == "for what it's worth"
+        && SSMLText.finish("Airbnb", sayAs: nil) == "Air bea en bea"
+        && SSMLText.finish("my Mbps plan", sayAs: nil) == "my megabits per second plan"
+        && SSMLText.finish("omg", sayAs: nil) == "oe em jee"
+        && SSMLText.finish("Ai", sayAs: nil) == "ay igh"
+        && SSMLText.finish("ai", sayAs: nil) == "aigh igh"
+        && SSMLText.finish("the Sen voted", sayAs: nil) == "the senator voted"
+        && SSMLText.finish("FWIW", sayAs: nil) == "FWIW"
+        && SSMLText.finish("SUV", sayAs: nil) == "SUV"
+        && SSMLText.finish("Govt", sayAs: nil) == "Govt"
 }
 
 // MARK: - The ellipsis, and the notification that found it
