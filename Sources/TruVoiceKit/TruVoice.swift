@@ -166,6 +166,10 @@ public final class TruVoice {
         // byte-identical both ways (see above).
         ("repo", "RE1PO"),
         ("repos", "RE1POS"),
+        // "dyson" natives "dih-sun" (`Di1S@N`); "Die son" splits the stress
+        // ("DYE SUN", the star). "DI1S@N" keeps dye stressed and the second
+        // syllable reduced -- trace shows it in-sentence, ASR hears Dyson.
+        ("dyson", "DI1S@N"),
         // Dictionary respellings (IBM TTS dictionary, community profile)
         // whose single-word prescriptions verify byte-identical through the
         // lexicon: speaking the key with the entry is the same samples,

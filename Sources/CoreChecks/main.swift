@@ -160,7 +160,6 @@ check("dictionary respellings replace the engine's guesses") {
         && SSMLText.finish("open Gmail", sayAs: nil) == "open Gee mail"
         && SSMLText.finish("my iOS device", sayAs: nil) == "my eye oh ess device"
         && SSMLText.finish("go to Walmart", sayAs: nil) == "go to Wall mart"
-        && SSMLText.finish("my Dyson", sayAs: nil) == "my Die son"
         && SSMLText.finish("open PayPal", sayAs: nil) == "open Pay Pal"
         && SSMLText.finish("join LocalDevVPN", sayAs: nil) == "join Local Dev VPN"
         && SSMLText.finish("open UniFi", sayAs: nil) == "open You Nuh Fye"

@@ -186,7 +186,7 @@ struct TextPreparationTests {
         #expect(SSMLText.finish("open SyncTrain", sayAs: nil) == "open Sync Train")
         // App and brand names the engine mangles, each verified by trace
         // and synth: dropped G (Gmail), "I uh" (iOS), "Walm ert"
-        // (Walmart), "dissin" (Dyson), "paple" (PayPal), "low call dvn"
+        // (Walmart), "paple" (PayPal), "low call dvn"
         // (LocalDevVPN), "oo nee fee" (UniFi), "scree beam" (ScribeMe),
         // "mayda" (ameta), "yow tib" (YouTube), "air" (Aira), unspelled
         // GPT (ChatGPT), one-syllable Lire, "door dish" (DoorDash),
@@ -195,7 +195,6 @@ struct TextPreparationTests {
         #expect(SSMLText.finish("open Gmail", sayAs: nil) == "open Gee mail")
         #expect(SSMLText.finish("my iOS device", sayAs: nil) == "my eye oh ess device")
         #expect(SSMLText.finish("go to Walmart", sayAs: nil) == "go to Wall mart")
-        #expect(SSMLText.finish("my Dyson", sayAs: nil) == "my Die son")
         #expect(SSMLText.finish("open PayPal", sayAs: nil) == "open Pay Pal")
         #expect(SSMLText.finish("join LocalDevVPN", sayAs: nil) == "join Local Dev VPN")
         #expect(SSMLText.finish("open UniFi", sayAs: nil) == "open You Nuh Fye")
