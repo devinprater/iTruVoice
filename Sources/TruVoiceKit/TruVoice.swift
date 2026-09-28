@@ -13,15 +13,31 @@ import Foundation
 /// the provider keeps one per voice and only ever touches it from the request
 /// thread, while the audio thread reads nothing but the finished samples.
 public final class TruVoice {
-    /// The engine's native rate. `tvtts_create` takes 11025 or 8000.
+    /// The engine's native rate. Synths open at this unless asked otherwise;
+    /// `tvtts_set_sample_rate` offers 8000 and 16000 (see TVTTS_SR_*).
     public static let sampleRate: UInt32 = 11025
 
-    /// The ten voices, in engine order. Voice 0 is Peter, the voice the
-    /// phoneme tables were written for; the rest are parametric deviations.
+    /// The twenty voices in engine order: the ten English (voice 0 is Peter,
+    /// the voice the phoneme tables were written for; the rest are parametric
+    /// deviations) then the ten Spanish, Pedro through Isabel. The names come
+    /// from the engine data in registration order, measured against the
+    /// linked tree -- `tvtts_voice_name` 0 through 19.
     public static let voiceNames = [
         "Peter", "Sidney", "Eager Eddie", "Deep Douglas", "Biff",
         "Grandpa Amos", "Melvin", "Alex", "Wanda", "Julia",
+        "Pedro", "Jorge", "Ricardo", "Paco", "Luis",
+        "Ezequiel", "Rogelio", "Carlos", "Josefa", "Isabel",
     ]
+
+    /// The language for a voice index: the engine carries one combined list,
+    /// so the index picks both the parameter row and the engine -- 0-9 run
+    /// the English engine, 10-19 the Spanish. Measured: every combination
+    /// speaks (an English synth with voice 12 is Ricardo's parameters on
+    /// English text), so the catalog pairs each index with its own engine
+    /// and never mixes them.
+    public static func language(forVoice index: Int) -> String {
+        index < 10 ? "en" : "es"
+    }
 
     /// One finished utterance: mono samples at `sampleRate`, plus the index
     /// marks the engine passed, each with the engine-sample position where
@@ -35,7 +51,8 @@ public final class TruVoice {
     private let voiceIndex: Int
 
     public init?(voice: Int) {
-        guard let s = tvtts_create(TruVoice.sampleRate) else { return nil }
+        guard (0..<Self.voiceNames.count).contains(voice),
+              let s = tvtts_create_lang(TruVoice.sampleRate, Self.language(forVoice: voice)) else { return nil }
         synth = s
         voiceIndex = voice
         tvtts_set_voice(s, Int32(voice))
@@ -180,7 +197,10 @@ public final class TruVoice {
     /// `tvtts_add_lexicon` is process-global (the engine keeps one static
     /// user table), so one install covers every voice's synth in this
     /// process -- the app and the provider extension each install their own,
-    /// as separate processes.
+    /// as separate processes. That table is shared across languages too:
+    /// the entries stand on Spanish synths, where the keys are English
+    /// words read with English phonemes -- correct for those words, and
+    /// Spanish words never match the keys.
     ///
     /// Guarded by `lexiconLock`; `nonisolated(unsafe)` silences Swift 6's
     /// shared-mutable-state error, which is exact here -- every access holds

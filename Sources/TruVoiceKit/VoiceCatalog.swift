@@ -1,18 +1,21 @@
 import Foundation
 
-/// The voices the app and the provider offer: the engine's ten, all en-US.
+/// The voices the app and the provider offer: the engine's twenty, ten
+/// per language.
 ///
 /// The names come from the engine data in registration order (voice 0 is
-/// Peter). The identifier is the index after the bundle prefix; the provider
-/// matches on the trailing component because the system re-prefixes the
-/// identifier with the extension's bundle ID.
+/// Peter, voice 10 is Pedro). The identifier is the index after the bundle
+/// prefix; the provider matches on the trailing component because the system
+/// re-prefixes the identifier with the extension's bundle ID. Indices stay
+/// plain integers 0-19, so existing English identifiers are unchanged and
+/// Spanish voices appear under es-ES in VoiceOver's Spanish voices.
 public enum VoiceCatalog {
     public static let identifierPrefix = "com.devin.itruvoice."
 
     public struct Voice: Sendable {
         public let index: Int
         public let name: String
-        public let language = "en-US"
+        public var language: String { index < 10 ? "en-US" : "es-ES" }
     }
 
     public static let all: [Voice] = TruVoice.voiceNames.enumerated().map { i, name in
