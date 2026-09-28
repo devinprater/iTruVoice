@@ -122,6 +122,10 @@ public final class TruVoice {
     /// can reach it; that is SAPI-era convention, not a mispronunciation.
     private static let lexiconEntries: [(word: String, phonemes: String)] = [
         ("Devin", "De1V|N"),
+        // The engine reads the compound as voice + "eover" (`Vy1SEYOV3`).
+        // "Vy1S%O1V3" is exactly what two-word "voice over" says, verified
+        // byte-identical (same samples, same hash) on every casing.
+        ("VoiceOver", "Vy1S%O1V3"),
     ]
 
     /// Installs `lexiconEntries` once per process.
