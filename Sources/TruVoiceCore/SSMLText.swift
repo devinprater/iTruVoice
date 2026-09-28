@@ -215,11 +215,17 @@ public enum SSMLText {
                 }
 
             case "phoneme":
-                // The engine takes no phoneme input here (its phoneme path is
-                // a separate API), so the enclosed text is spoken with its
-                // ordinary pronunciation. `alphabet` and `ph` are ignored
-                // rather than approximated: a wrong pronunciation is worse
-                // than the normal one.
+                // The enclosed text is spoken with its ordinary
+                // pronunciation. `alphabet` and `ph` are ignored rather than
+                // approximated: SSML phonemes arrive in an alphabet the
+                // engine does not speak (usually IPA), while the engine's
+                // own alphabet is one character per phoneme ("hello" is
+                // "HeLO1") -- mapping one to the other by hand is a wrong
+                // pronunciation waiting to happen, which is worse than the
+                // normal one. Per-word phonetic fixes live in the engine's
+                // user lexicon instead (see TruVoice.ensurePronunciationFixes,
+                // via `tvtts_add_lexicon`), where they are engine phonemes
+                // derived from the engine itself, not transcriptions.
                 if isClosing { flush() }
 
             case "lexicon", "lookup", "meta", "metadata":
