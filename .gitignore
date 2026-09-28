@@ -1,4 +1,4 @@
-.build/
+.build
 xtool/
 *.o
 *.ipa

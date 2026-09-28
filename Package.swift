@@ -42,11 +42,46 @@ let engineSources = [
 // The Spanish engine: same library, every name es_-prefixed. The rename
 // header (Vendor/generated/es_rename.h) must be force-included into exactly
 // these translation units -- a global -include would rename the English
-// Engine_Feed too, which is why Spanish is its own target. Directory
-// entries expand to their .c files; headers ride along untouched.
+// Engine_Feed too, which is why Spanish is its own target. Explicit file
+// list: the directories also hold non-sources (engine.fields) that SwiftPM's
+// expansion hands to clang as C, which fails the build.
 let spanishSources = [
-    "upstream/es",
-    "upstream/es_port",
+    "upstream/es/adjust.c",
+    "upstream/es/bittab.c",
+    "upstream/es/cluster.c",
+    "upstream/es/contour.c",
+    "upstream/es/control.c",
+    "upstream/es/engine.c",
+    "upstream/es/escape.c",
+    "upstream/es/flush.c",
+    "upstream/es/generate.c",
+    "upstream/es/input.c",
+    "upstream/es/interp.c",
+    "upstream/es/list.c",
+    "upstream/es/node.c",
+    "upstream/es/number.c",
+    "upstream/es/params.c",
+    "upstream/es/phone.c",
+    "upstream/es/preformat.c",
+    "upstream/es/prosody.c",
+    "upstream/es/reset.c",
+    "upstream/es/ring.c",
+    "upstream/es/rule.c",
+    "upstream/es/segment.c",
+    "upstream/es/stage.c",
+    "upstream/es/stage0.c",
+    "upstream/es/stage1.c",
+    "upstream/es/stage2.c",
+    "upstream/es/stage3.c",
+    "upstream/es/stage3seg.c",
+    "upstream/es/stage4.c",
+    "upstream/es/synth.c",
+    "upstream/es/tables.c",
+    "upstream/es/textin.c",
+    "upstream/es/track.c",
+    "upstream/es/util.c",
+    "upstream/es_port/msvcrt_es.c",
+    "upstream/es_port/tvtts_es.c",
     "generated/tvdata_es.s",
 ]
 
@@ -121,7 +156,7 @@ let package = Package(
             name: "CTruVoiceES",
             path: "Vendor",
             sources: spanishSources,
-            publicHeadersPath: "upstream/include",
+            publicHeadersPath: "es_include",
             cSettings: [
                 .headerSearchPath("upstream/es"),
                 .headerSearchPath("upstream/src"),
