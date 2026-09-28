@@ -52,7 +52,7 @@ public final class TruVoice {
         synth = s
         voiceIndex = voice
         tvtts_set_voice(s, Int32(voice))
-        Self.ensurePronunciationFixes(s)
+        Self.ensurePronunciationFixes()
     }
 
     deinit {
@@ -111,55 +111,57 @@ public final class TruVoice {
         return uttered.samples.contains { $0 != 0 }
     }
 
-    /// Pins the capitalised words the engine gets wrong to the phonemes of
-    /// the forms it gets right, in the engine's own user lexicon.
+    /// Pins the words the engine gets wrong to measured phonemes, in the
+    /// engine's own user lexicon.
     ///
     /// This is the phonetic fix rather than an ASCII rewrite: the lexicon
     /// takes the engine's own phoneme alphabet (one character per phoneme,
-    /// "1"/"2" for stress -- "hello" is "HeLO1"), so "Linux" speaks with
-    /// exactly the phonemes lowercase "linux" does, as one word, with no
+    /// "1"/"2" for stress), so the entry speaks with exact phonemes and no
     /// respelling for the text layer to carry.
     ///
-    /// The phonemes are derived from the engine itself at install time
-    /// (`tvtts_text_to_phonemes`), not hand-written: deriving costs one
-    /// thrown-away synthesis, leaves the settings alone, and cannot drift
-    /// from what the engine would actually say. If derivation fails the
-    /// word is left out and the engine reads it natively, as today.
-    private static func ensurePronunciationFixes(_ synth: OpaquePointer) {
+    /// Entries are measured against the engine, not assumed:
+    /// - "Devin" natives stress the second syllable ("dev-IN": `D|Vi1N`),
+    ///   while Kevin is `Ke1V|N`. "De1V|N" is Kevin with a D -- one word,
+    ///   first-syllable stress, and the possessive comes along ("Devin's"
+    ///   reads `De1V|NZ`). The key is case-insensitive (the engine
+    ///   uppercases it), so one entry covers Devin, devin and DEVIN.
+    ///
+    /// What is deliberately NOT here: "Linux". Lowercase and title-case
+    /// already read identically (`Li1NvKS`), so there is nothing to pin --
+    /// and an entry built from the raw `text_to_phonemes` output (with its
+    /// `&`/`.` sentence markers) inserts garbage nodes and lengthens the
+    /// word. All-caps spell-out (LINUX, APPLE) happens in the front-end
+    /// token classifier before the lexicon ever sees the word, so no entry
+    /// can reach it; that is SAPI-era convention, not a mispronunciation.
+    private static let lexiconEntries: [(word: String, phonemes: String)] = [
+        ("Devin", "De1V|N"),
+    ]
+
+    /// Installs `lexiconEntries` once per process.
+    ///
+    /// `tvtts_add_lexicon` is process-global (the engine keeps one static
+    /// user table), so one install covers every voice's synth in this
+    /// process -- the app and the provider extension each install their own,
+    /// as separate processes.
+    ///
+    /// Guarded by `lexiconLock`; `nonisolated(unsafe)` silences Swift 6's
+    /// shared-mutable-state error, which is exact here -- every access holds
+    /// the lock.
+    nonisolated(unsafe) private static var lexiconInstalled = false
+    private static let lexiconLock = NSLock()
+
+    private static func ensurePronunciationFixes() {
         lexiconLock.lock()
         defer { lexiconLock.unlock() }
         guard !lexiconInstalled else { return }
         lexiconInstalled = true
-        // (word as typed, word as the engine already says correctly)
-        for (word, source) in [("Linux", "linux")] {
-            guard let phonemes = enginePhonemes(for: source, synth: synth) else { continue }
-            word.withCString { wordCString in
-                phonemes.withCString { phonemesCString in
+        for entry in lexiconEntries {
+            entry.word.withCString { wordCString in
+                entry.phonemes.withCString { phonemesCString in
                     _ = tvtts_add_lexicon(wordCString, phonemesCString)
                 }
             }
         }
-    }
-
-    /// What the engine would say for `text`, in its own phoneme alphabet.
-    /// nil when the engine cannot produce it.
-    private static func enginePhonemes(for text: String,
-                                       synth: OpaquePointer) -> String? {
-        // Ask the size first: the return counts the terminator, so a short
-        // buffer truncates but still reports what was wanted.
-        let needed = text.withCString { textCString in
-            tvtts_text_to_phonemes(synth, textCString, nil, 0)
-        }
-        guard needed > 1 else { return nil }
-        var buffer = [CChar](repeating: 0, count: Int(needed))
-        let written = buffer.withUnsafeMutableBufferPointer { pointer in
-            text.withCString { textCString in
-                tvtts_text_to_phonemes(synth, textCString,
-                                       pointer.baseAddress, UInt32(pointer.count))
-            }
-        }
-        guard written > 1 else { return nil }
-        return String(cString: buffer)
     }
 }
 

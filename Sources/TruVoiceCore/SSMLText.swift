@@ -225,7 +225,7 @@ public enum SSMLText {
                 // normal one. Per-word phonetic fixes live in the engine's
                 // user lexicon instead (see TruVoice.ensurePronunciationFixes,
                 // via `tvtts_add_lexicon`), where they are engine phonemes
-                // derived from the engine itself, not transcriptions.
+                // measured against the engine, not transcriptions.
                 if isClosing { flush() }
 
             case "lexicon", "lookup", "meta", "metadata":
