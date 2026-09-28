@@ -181,6 +181,9 @@ struct TextPreparationTests {
         // CsRb1VyS; split, both speak clean.
         #expect(SSMLText.finish("open SideStore", sayAs: nil) == "open Side Store")
         #expect(SSMLText.finish("Meet TruVoice", sayAs: nil) == "Meet True Voice")
+        // Unstressed second syllable reduces ("synctrain" traces
+        // Si1~KCsR@N, "trun"); split, both halves keep their stress.
+        #expect(SSMLText.finish("open SyncTrain", sayAs: nil) == "open Sync Train")
     }
 }
 
