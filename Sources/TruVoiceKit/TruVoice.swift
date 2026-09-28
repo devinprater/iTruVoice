@@ -40,7 +40,11 @@ public final class TruVoice {
     /// user table), so one install covers every voice's synth in this
     /// process -- the app and the provider extension each install their own,
     /// as separate processes.
-    private static var lexiconInstalled = false
+    ///
+    /// Guarded by `lexiconLock`; `nonisolated(unsafe)` silences Swift 6's
+    /// shared-mutable-state error, which is exact here -- every access holds
+    /// the lock.
+    nonisolated(unsafe) private static var lexiconInstalled = false
     private static let lexiconLock = NSLock()
 
     public init?(voice: Int) {
