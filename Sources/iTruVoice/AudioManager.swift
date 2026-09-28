@@ -53,7 +53,7 @@ final class AudioManager: ObservableObject {
 
         do {
             try startGraphIfNeeded()
-            let buffer = try converted(uttered.samples)
+            let buffer = try converted(VoiceAudio.boosted(uttered.samples))
             playerNode.scheduleBuffer(buffer) { [weak self] in
                 Task { @MainActor [weak self] in
                     self?.isSpeaking = false

@@ -23,6 +23,20 @@ public enum VoiceAudio {
     /// does not start clipped, short enough not to be heard as a pause.
     public static let joinGapSeconds: Double = 0.040
 
+    /// Every sample lifted by `VoiceParameters.baseBoost`, clamped to the
+    /// 16-bit range.
+    ///
+    /// The preview path converts integer PCM straight into the player
+    /// buffer, so the lift happens here in integers (the VoiceOver path
+    /// multiplies it into its float resample instead). Clamping keeps the
+    /// loudest voice's tallest peaks at full scale instead of wrapping.
+    public static func boosted(_ pcm: [Int16], boost: Float = VoiceParameters.baseBoost) -> [Int16] {
+        pcm.map { sample in
+            let lifted = Float(sample) * boost
+            return Int16(min(max(lifted, Float(Int16.min)), Float(Int16.max)))
+        }
+    }
+
     /// The range of `pcm` that holds speech, widened by `gap` samples of
     /// quiet on each side, plus how many leading samples that range dropped.
     ///

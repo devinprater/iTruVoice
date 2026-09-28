@@ -183,6 +183,12 @@ check("volume is a gain, nil untouched") {
         && VoiceParameters.gain(forVoiceOver: 0) == 0.0
 }
 
+check("the base boost lifts, and clamps instead of wrapping") {
+    VoiceParameters.baseBoost == 2.0
+        && VoiceAudio.boosted([1000, -1000]) == [2000, -2000]
+        && VoiceAudio.boosted([20000, -20000]) == [Int16.max, Int16.min]
+}
+
 // MARK: - Engine silence trim
 
 check("the engine's lead and tail silence is trimmed") {

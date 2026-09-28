@@ -187,7 +187,7 @@ public final class TruVoiceSpeechProvider: AVSpeechSynthesisProviderAudioUnit {
                 for id in pieceMarkIDs { markNames.removeValue(forKey: id) }
                 samples.append(contentsOf: Self.resample(Array(uttered.samples[voiced.range]),
                                                          from: Double(TruVoice.sampleRate),
-                                                         gain: gain))
+                                                         gain: gain * VoiceParameters.baseBoost))
 
             case .pause(let seconds):
                 // Silence is the only pause available: the engine renders one

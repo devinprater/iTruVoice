@@ -93,6 +93,17 @@ public enum VoiceParameters {
         return min(max(Float(volume) / 100.0, 0), 1)
     }
 
+    /// Base loudness lift applied on every path, under VoiceOver's volume.
+    ///
+    /// Measured on the built engine (all ten voices, one loud sentence):
+    /// peaks run 30% to 74% of full scale (Peter 43%, RMS a quiet 1874), so
+    /// full volume still sits well below Alex and Keynote Gold. Doubling
+    /// puts RMS in normal TTS territory; the loudest voice can clip its
+    /// tallest peaks against full scale, which beats staying quiet on the
+    /// other nine. VoiceOver's volume still scales above this, and volume 0
+    /// still silences.
+    public static let baseBoost: Float = 2.0
+
     /// VoiceOver states these values either as a fraction of the range (0-1)
     /// or as a percentage (0-100), depending on the property. Anything above
     /// 1.5 can only be the latter, so scale it down; clamped to 0-1, so an
