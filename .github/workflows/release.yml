@@ -25,6 +25,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # The strip step stamps the version from the newest tag
+          # (workflow_dispatch has no tag ref), which needs the tags the
+          # default shallow checkout leaves behind.
+          fetch-depth: 0
 
       - name: Upstream is at the pinned commit
         run: |
