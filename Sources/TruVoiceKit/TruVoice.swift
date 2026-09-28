@@ -34,19 +34,6 @@ public final class TruVoice {
     private var synth: OpaquePointer?
     private let voiceIndex: Int
 
-    /// The user-lexicon fixes, installed once per process.
-    ///
-    /// `tvtts_add_lexicon` is process-global (the engine keeps one static
-    /// user table), so one install covers every voice's synth in this
-    /// process -- the app and the provider extension each install their own,
-    /// as separate processes.
-    ///
-    /// Guarded by `lexiconLock`; `nonisolated(unsafe)` silences Swift 6's
-    /// shared-mutable-state error, which is exact here -- every access holds
-    /// the lock.
-    nonisolated(unsafe) private static var lexiconInstalled = false
-    private static let lexiconLock = NSLock()
-
     public init?(voice: Int) {
         guard let s = tvtts_create(TruVoice.sampleRate) else { return nil }
         synth = s
