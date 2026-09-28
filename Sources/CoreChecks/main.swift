@@ -234,9 +234,9 @@ check("the engine's lead and tail silence is trimmed") {
     var pcm = [Int16](repeating: 0, count: 1320)
     pcm += [Int16](repeating: 400, count: 100)
     pcm += [Int16](repeating: 0, count: 4180)
-    let gap = Int(VoiceAudio.joinGapSeconds * 11025)
+    let gap = Int(VoiceAudio.joinGapSeconds * 16000)  // TruVoice.sampleRate; CoreChecks sees TruVoiceCore only
     let (range, lead) = VoiceAudio.voicedRange(pcm, gap: gap)
-    // 40 ms of lead kept (441 samples), the rest dropped.
+    // 40 ms of lead kept (640 samples at 16 kHz), the rest dropped.
     return lead == 1320 - gap
         && range.count == gap + 100 + gap
         && range.upperBound < pcm.count

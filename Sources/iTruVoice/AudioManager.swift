@@ -7,7 +7,7 @@ import TruVoiceCore
 ///
 /// `AVAudioPlayerNode.scheduleBuffer` raises an uncatchable Objective-C
 /// exception unless the buffer format exactly matches the node's output
-/// format. The engine is mono at 11025 Hz while the node runs at the hardware
+/// format. The engine is mono at 16 kHz while the node runs at the hardware
 /// format, so every utterance is converted with an AVAudioConverter first.
 ///
 /// The engine starts lazily and shuts down once idle: an AVAudioEngine left

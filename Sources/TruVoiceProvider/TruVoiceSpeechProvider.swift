@@ -6,7 +6,7 @@ import TruVoiceCore
 
 /// The rate this provider declares to the host.
 ///
-/// The engine runs at 11025 Hz. Declaring a fixed rate here and resampling
+/// The engine runs at 16 kHz (`TruVoice.sampleRate`). Declaring a fixed rate here and resampling
 /// during synthesis keeps playback at the right pitch; 22050 is the
 /// conventional choice for speech providers.
 private let kOutputSampleRate: Double = 22050.0

@@ -13,9 +13,13 @@ import Foundation
 /// the provider keeps one per voice and only ever touches it from the request
 /// thread, while the audio thread reads nothing but the finished samples.
 public final class TruVoice {
-    /// The engine's native rate. Synths open at this unless asked otherwise;
-    /// `tvtts_set_sample_rate` offers 8000 and 16000 (see TVTTS_SR_*).
-    public static let sampleRate: UInt32 = 11025
+    /// The engine rate everything runs at: 16000 Hz, OpenTV's own third rate
+    /// (see TVTTS_SR_16K) -- genuinely more bandwidth than the 11025 Hz
+    /// desktop default, not an upsample, with the same voices. Every consumer
+    /// reads this constant (the provider's resample ratio and mark mapping,
+    /// the app's converter format), so the whole pipeline follows it.
+    /// Synths open at it directly: `tvtts_create_lang` takes 16000.
+    public static let sampleRate: UInt32 = 16000
 
     /// The twenty voices in engine order: the ten English (voice 0 is Peter,
     /// the voice the phoneme tables were written for; the rest are parametric

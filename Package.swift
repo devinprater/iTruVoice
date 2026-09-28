@@ -121,6 +121,7 @@ let package = Package(
             name: "CTruVoiceES",
             path: "Vendor",
             sources: spanishSources,
+            publicHeadersPath: "upstream/include",
             cSettings: [
                 .headerSearchPath("upstream/es"),
                 .headerSearchPath("upstream/src"),
