@@ -19,12 +19,25 @@ import Foundation
 ///   in the text can change the voice's rate for the rest of the utterance
 ///   instead of being read. It becomes a space.
 ///
-/// What this deliberately does NOT carry over from that port: the comma, dot,
+/// What this deliberately does NOT carry over from that port: the comma,
 /// number, version and clock-time surgery. Every one of those was measured
-/// against TruVoice first, and none is needed — "Reddit, Yesterday, Version
-/// 2026.38.0" speaks in full, "claude.ai" and "9to5google.com" speak,
-/// "555 1234" speaks, "5:19 PM" reads as a time. Rewriting them would only
-/// risk what already works. What TruVoice does need is the fold: it reads a
+/// against TruVoice first, and none is needed -- "Reddit, Yesterday, Version
+/// 2026.38.0" speaks in full, "555 1234" speaks, "5:19 PM" reads as a time.
+/// Rewriting them would only risk what already works.
+///
+/// Dots and "@" are the exception, and for a different reason than over
+/// there: nothing goes silent here, but the structure goes unheard. The
+/// engine drops dots with no sound of their own ("claude.ai" reads "claude
+/// aye"), so "prater.devin@aidb.org" arrives as "prater devin at aidb org".
+/// Letter dots become the word "dot" and "@" becomes "at" (see
+/// `expandDotsAndAt`); digit dots, abbreviation chains and "://" hosts
+/// already read correctly and are left alone. Acronyms the engine would
+/// read as one word ("aidb" as `A1DB`, "ai" as "aye") are uppercased for
+/// the front end's all-caps spell-out (see `expandAcronyms`); per-word
+/// mispronunciations that need exact phonemes ("repo" as "REH-po") live in
+/// the engine's user lexicon instead (see `TruVoice.ensurePronunciationFixes`).
+///
+/// What TruVoice does need is the fold: it reads a
 /// single-byte code page, so curly quotes, emoji-adjacent punctuation and
 /// accented letters come out as glyphs ("It's" as "Beta s", "café" as "Cash
 /// for copier"), and bidi marks corrupt the word they touch. Those are
@@ -401,6 +414,13 @@ public enum SSMLText {
         text = collapseWhitespace(text)
         text = closeGapsBeforePunctuation(text)
         text = applySayAs(text, mode: sayAs)
+        // After `say-as`, so a word it spelled out is never rewritten: its
+        // spaces would not match a whole word anyway, and its lowercase
+        // letters must keep their names.
+        text = expandAcronyms(text)
+        // After acronyms, so an uppercased domain label ("AIDB.org") still
+        // gets its dot said.
+        text = expandDotsAndAt(text)
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -515,6 +535,97 @@ public enum SSMLText {
         default:
             return text
         }
+    }
+
+    /// Says acronyms the engine would read as one word.
+    ///
+    /// The front end spells an ALL-CAPS run letter by letter -- measured,
+    /// "AIDB" reads `A1&I1&DE1&BE1` and "AI" reads `A1&I1` -- while the
+    /// lowercase forms read as words ("aidb" is `A1DB`, "ai" is `A1`,
+    /// "aye"). Uppercasing the word therefore hands the engine a reading it
+    /// already gets right, with no phoneme strings to carry. Whole-word and
+    /// case-insensitive, longest first, so "AIDBS" settles before "AIDB" and
+    /// neither fires inside a longer word ("said", "air" and "aid" are
+    /// untouched).
+    ///
+    /// A lexicon entry cannot do this instead: the caps reading's `&`
+    /// separators speak different audio through the lexicon (garbage nodes),
+    /// and without them the letters blend into one word. Both measured; see
+    /// `TruVoice.lexiconEntries`.
+    public static func expandAcronyms(_ text: String) -> String {
+        var result = text
+        for (term, replacement) in acronyms {
+            guard result.range(of: term, options: .caseInsensitive) != nil else { continue }
+            let pattern = "\\b" + NSRegularExpression.escapedPattern(for: term) + "\\b"
+            guard let regex = try? NSRegularExpression(pattern: pattern,
+                                                       options: [.caseInsensitive]) else { continue }
+            let range = NSRange(result.startIndex..., in: result)
+            result = regex.stringByReplacingMatches(in: result, options: [],
+                                                    range: range, withTemplate: replacement)
+        }
+        return result
+    }
+
+    /// Words read as letters, longest first.
+    private static let acronyms: [(term: String, replacement: String)] = [
+        ("aidbs", "AIDBS"),
+        ("aidb", "AIDB"),
+        ("ai", "AI"),
+    ]
+
+    /// Says email addresses and domains the way they are written.
+    ///
+    /// The engine drops dots silently -- measured, "claude.ai" reads
+    /// "claude aye" (`KLw1T&A1`), the dot with no sound of its own -- so an
+    /// address arrives with its structure half missing:
+    /// "prater.devin@aidb.org" is heard as "prater devin at aidb org".
+    /// Dots between letters become the word "dot" and "@" becomes "at", so
+    /// the address is heard complete.
+    ///
+    /// Untouched, because the engine already reads them: digit dots
+    /// ("Version 2026.38.0", "3.5"), abbreviation chains ("e.g.", "U.S.",
+    /// spotted by the single-letter run meeting another dot), and "://"
+    /// URL hosts ("http://x.com" reads its colon and slashes). Everything
+    /// else says "dot" wherever it sits -- unlike the sibling engine there
+    /// is no silence to cure, only unheard structure, so a mid-piece dot
+    /// ("visit google.com today") and a trailing period ("Visit
+    /// example.com.") both want the word.
+    public static func expandDotsAndAt(_ text: String) -> String {
+        // "@" first: it is never a word character, and spelling it out keeps
+        // the dot pass to dots alone.
+        let atMarked = text.replacingOccurrences(of: "@", with: " at ")
+        let characters = Array(atMarked)
+        var output = ""
+        output.reserveCapacity(atMarked.count + 8)
+        for (index, character) in characters.enumerated() {
+            guard character == ".",
+                  index > 0, index + 1 < characters.count,
+                  characters[index - 1].isLetter,
+                  characters[index + 1].isLetter
+            else { output.append(character); continue }
+            // An abbreviation chain ("e.g.", "U.S.", "Ph.D."): a
+            // single-letter run meeting another dot. Longer runs meeting a
+            // dot ("example.com.") still want theirs heard.
+            var next = index + 1
+            while next < characters.count, characters[next].isLetter { next += 1 }
+            if next - (index + 1) == 1, next < characters.count,
+               characters[next] == "." {
+                output.append(character); continue
+            }
+            // A URL host ("http://x.com") reads its punctuation already, so
+            // a dot inside a "://" run is left alone. Only the scheme form
+            // counts: a path ("files/report.txt") still needs its dot.
+            var token = index - 1
+            while token >= 0, characters[token].isLetter || characters[token].isNumber
+                || "./:@-_".contains(characters[token]) {
+                token -= 1
+            }
+            if String(characters[(token + 1)..<index]).contains("://") {
+                output.append(character); continue
+            }
+            output.append(" dot ")
+        }
+        return collapseWhitespace(output)
     }
 
     /// Resolves `<sub alias="...">` to its alias.

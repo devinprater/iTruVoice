@@ -112,6 +112,13 @@ public final class TruVoice {
     ///   first-syllable stress, and the possessive comes along ("Devin's"
     ///   reads `De1V|NZ`). The key is case-insensitive (the engine
     ///   uppercases it), so one entry covers Devin, devin and DEVIN.
+    /// - "repo" natives the short e ("REH-po": `Re1PO`), while "reepo" reads
+    ///   `RE1PO` ("REE-po") -- the doubled e forces the long vowel, the way
+    ///   "keep" is `KE1P` against "rep"'s `Re1P`. Speaking "repo" with the
+    ///   entry is byte-identical to speaking "reepo" without it (same
+    ///   samples, same hash), and the possessive comes along ("repo's" reads
+    ///   `RE1POZ`). "repos" gets the same treatment against "reepos"
+    ///   (`RE1POS`, byte-identical both ways).
     ///
     /// What is deliberately NOT here: "Linux". Lowercase and title-case
     /// already read identically (`Li1NvKS`), so there is nothing to pin --
@@ -120,12 +127,24 @@ public final class TruVoice {
     /// word. All-caps spell-out (LINUX, APPLE) happens in the front-end
     /// token classifier before the lexicon ever sees the word, so no entry
     /// can reach it; that is SAPI-era convention, not a mispronunciation.
+    ///
+    /// Also not here: "aidb". Lowercase it reads as one word (`A1DB`), while
+    /// all-caps reads as letters (`A1&I1&DE1&BE1`) -- but a lexicon entry
+    /// cannot reproduce that reading: with the `&` separators it speaks
+    /// different audio than the caps form (garbage nodes, as above), and
+    /// without them the letters blend into one word. Acronyms like this go
+    /// through the text layer instead (see `SSMLText.expandAcronyms`), which
+    /// uppercases the word and lets the front end spell it.
     private static let lexiconEntries: [(word: String, phonemes: String)] = [
         ("Devin", "De1V|N"),
         // The engine reads the compound as voice + "eover" (`Vy1SEYOV3`).
         // "Vy1S%O1V3" is exactly what two-word "voice over" says, verified
         // byte-identical (same samples, same hash) on every casing.
         ("VoiceOver", "Vy1S%O1V3"),
+        // "repo" natives the short e; "RE1PO" is what "reepo" says,
+        // byte-identical both ways (see above).
+        ("repo", "RE1PO"),
+        ("repos", "RE1POS"),
     ]
 
     /// Installs `lexiconEntries` once per process.

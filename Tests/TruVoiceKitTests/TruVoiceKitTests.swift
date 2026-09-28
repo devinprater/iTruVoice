@@ -120,13 +120,39 @@ struct TextPreparationTests {
         #expect(SSMLText.finish("Hello 😀 world", sayAs: nil) == "Hello 😀 world")
     }
 
-    @Test("Commas, dots, numbers and times are left alone")
+    @Test("Commas, numbers and times are left alone; dots say dot")
     func engineReadsItself() {
         #expect(SSMLText.finish("Reddit, Yesterday", sayAs: nil) == "Reddit, Yesterday")
-        #expect(SSMLText.finish("claude.ai", sayAs: nil) == "claude.ai")
         #expect(SSMLText.finish("Version 2026.38.0", sayAs: nil) == "Version 2026.38.0")
         #expect(SSMLText.finish("5:19 PM", sayAs: nil) == "5:19 PM")
         #expect(SSMLText.finish("Call 555 1234", sayAs: nil) == "Call 555 1234")
+        // The engine drops dots with no sound of their own ("claude.ai"
+        // reads "claude aye"), so letter dots become the word -- while
+        // digit dots, abbreviations and URL hosts already read correctly.
+        #expect(SSMLText.finish("claude.ai", sayAs: nil) == "claude dot AI")
+        #expect(SSMLText.finish("visit google.com today", sayAs: nil) == "visit google dot com today")
+        #expect(SSMLText.finish("Visit example.com.", sayAs: nil) == "Visit example dot com.")
+        #expect(SSMLText.finish("e.g.", sayAs: nil) == "e.g.")
+        #expect(SSMLText.finish("U.S.", sayAs: nil) == "U.S.")
+        #expect(SSMLText.finish("http://x.com", sayAs: nil) == "http://x.com")
+        #expect(SSMLText.finish("https://mail.example.com", sayAs: nil) == "https://mail.example.com")
+        #expect(SSMLText.finish("files/report.txt", sayAs: nil) == "files/report dot txt")
+    }
+
+    @Test("Addresses are heard complete, acronyms as letters")
+    func addresses() {
+        #expect(SSMLText.finish("prater.devin@aidb.org 107 Unread Messages", sayAs: nil)
+                == "prater dot devin at AIDB dot org 107 Unread Messages")
+        #expect(SSMLText.finish("devin@aidb.org", sayAs: nil) == "devin at AIDB dot org")
+        #expect(SSMLText.finish("write to bob@example.com today", sayAs: nil)
+                == "write to bob at example dot com today")
+        // The front end spells all-caps runs; lowercase would read as words.
+        #expect(SSMLText.finish("aidb", sayAs: nil) == "AIDB")
+        #expect(SSMLText.finish("ai", sayAs: nil) == "AI")
+        #expect(SSMLText.finish("said the aid to air", sayAs: nil) == "said the aid to air")
+        // "repo" keeps its spelling here: its fix is exact phonemes in the
+        // engine's user lexicon, measured against the engine.
+        #expect(SSMLText.finish("about the repo", sayAs: nil) == "about the repo")
     }
 }
 

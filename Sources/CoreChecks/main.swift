@@ -111,12 +111,37 @@ check("emoji passes through") {
     SSMLText.finish("Hello \u{1F600} world", sayAs: nil) == "Hello \u{1F600} world"
 }
 
-check("commas, dots, numbers and times are untouched") {
+check("commas, numbers and times are untouched; dots say dot") {
     SSMLText.finish("Reddit, Yesterday", sayAs: nil) == "Reddit, Yesterday"
-        && SSMLText.finish("claude.ai", sayAs: nil) == "claude.ai"
         && SSMLText.finish("Version 2026.38.0", sayAs: nil) == "Version 2026.38.0"
         && SSMLText.finish("5:19 PM", sayAs: nil) == "5:19 PM"
         && SSMLText.finish("Call 555 1234", sayAs: nil) == "Call 555 1234"
+        // The engine drops dots with no sound of their own ("claude.ai"
+        // reads "claude aye"), so letter dots become the word -- while
+        // digit dots, abbreviations and URL hosts already read correctly.
+        && SSMLText.finish("claude.ai", sayAs: nil) == "claude dot AI"
+        && SSMLText.finish("visit google.com today", sayAs: nil) == "visit google dot com today"
+        && SSMLText.finish("Visit example.com.", sayAs: nil) == "Visit example dot com."
+        && SSMLText.finish("e.g.", sayAs: nil) == "e.g."
+        && SSMLText.finish("U.S.", sayAs: nil) == "U.S."
+        && SSMLText.finish("http://x.com", sayAs: nil) == "http://x.com"
+        && SSMLText.finish("https://mail.example.com", sayAs: nil) == "https://mail.example.com"
+        && SSMLText.finish("files/report.txt", sayAs: nil) == "files/report dot txt"
+}
+
+check("addresses are heard complete, acronyms as letters") {
+    SSMLText.finish("prater.devin@aidb.org 107 Unread Messages", sayAs: nil)
+        == "prater dot devin at AIDB dot org 107 Unread Messages"
+        && SSMLText.finish("devin@aidb.org", sayAs: nil) == "devin at AIDB dot org"
+        && SSMLText.finish("write to bob@example.com today", sayAs: nil)
+        == "write to bob at example dot com today"
+        // The front end spells all-caps runs; lowercase would read as words.
+        && SSMLText.finish("aidb", sayAs: nil) == "AIDB"
+        && SSMLText.finish("ai", sayAs: nil) == "AI"
+        && SSMLText.finish("said the aid to air", sayAs: nil) == "said the aid to air"
+        // "repo" keeps its spelling here: its fix is exact phonemes in the
+        // engine's user lexicon, measured against the engine.
+        && SSMLText.finish("about the repo", sayAs: nil) == "about the repo"
 }
 
 // MARK: - The ellipsis, and the notification that found it
