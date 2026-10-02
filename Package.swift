@@ -29,10 +29,14 @@ let engineSources = [
     "upstream/src/engine/track.c",
     "upstream/src/engine/volume.c",
     "upstream/src/engine/vowel.c",
+    // voices.c carries OpenTV's own extra voices (Frank); sing.c the
+    // score compiler and singing entry points (added upstream 2026-10-01).
+    "upstream/src/engine/voices.c",
     // syn_hifi.c carries the resampled 16 kHz tables; api.c carries
     // tvtts_create and the speak entry points (added upstream 2026-09).
     "upstream/src/syn_hifi.c",
     "upstream/src/port/api.c",
+    "upstream/src/port/sing.c",
     "upstream/src/port/tvtts.c",
     "upstream/src/port/msvcrt.c",
     "upstream/src/port/stubs.c",
@@ -80,6 +84,9 @@ let spanishSources = [
     "upstream/es/textin.c",
     "upstream/es/track.c",
     "upstream/es/util.c",
+    // voices.c carries OpenTV's own extra Spanish voices (Fransisco,
+    // added upstream 2026-10-01).
+    "upstream/es/voices.c",
     "upstream/es_port/msvcrt_es.c",
     "upstream/es_port/tvtts_es.c",
     "generated/tvdata_es.s",

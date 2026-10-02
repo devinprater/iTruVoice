@@ -35,6 +35,10 @@ ENGINE_SRCS = sorted(
     # unconditionally while iTruVoice ships English only.
     os.path.join(UP, "src", "syn_hifi.c"),
     os.path.join(UP, "src", "port", "api.c"),
+    # sing.c carries the score compiler AND the text-pipeline pieces every
+    # utterance runs through (tv_camel_split, tv_phone_commands), added
+    # upstream 2026-10-01.
+    os.path.join(UP, "src", "port", "sing.c"),
     os.path.join(UP, "src", "port", "tvtts.c"),
     os.path.join(UP, "src", "port", "msvcrt.c"),
     os.path.join(UP, "src", "port", "stubs.c"),

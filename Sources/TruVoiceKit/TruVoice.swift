@@ -21,26 +21,27 @@ public final class TruVoice {
     /// Synths open at it directly: `tvtts_create_lang` takes 16000.
     public static let sampleRate: UInt32 = 16000
 
-    /// The twenty voices in engine order: the ten English (voice 0 is Peter,
-    /// the voice the phoneme tables were written for; the rest are parametric
-    /// deviations) then the ten Spanish, Pedro through Isabel. The names come
-    /// from the engine data in registration order, measured against the
-    /// linked tree -- `tvtts_voice_name` 0 through 19.
+    /// The twenty-two voices in engine order: the eleven English (voice 0 is
+    /// Peter, the voice the phoneme tables were written for; the rest are
+    /// parametric deviations -- Frank, from the MindMaker TextAssist build,
+    /// joined at index 10 upstream 2026-10-01) then the eleven Spanish, Pedro
+    /// through Isabel plus Francisco at index 21. The names come from the
+    /// engine in order, measured against the linked tree -- `tvtts_voice_name`
+    /// 0 through 21 (headless probe, 16 kHz).
     public static let voiceNames = [
         "Peter", "Sidney", "Eager Eddie", "Deep Douglas", "Biff",
-        "Grandpa Amos", "Melvin", "Alex", "Wanda", "Julia",
+        "Grandpa Amos", "Melvin", "Alex", "Wanda", "Julia", "Frank",
         "Pedro", "Jorge", "Ricardo", "Paco", "Luis",
-        "Ezequiel", "Rogelio", "Carlos", "Josefa", "Isabel",
+        "Ezequiel", "Rogelio", "Carlos", "Josefa", "Isabel", "Francisco",
     ]
 
     /// The language for a voice index: the engine carries one combined list,
-    /// so the index picks both the parameter row and the engine -- 0-9 run
-    /// the English engine, 10-19 the Spanish. Measured: every combination
-    /// speaks (an English synth with voice 12 is Ricardo's parameters on
-    /// English text), so the catalog pairs each index with its own engine
-    /// and never mixes them.
+    /// so the index picks both the parameter row and the engine -- 0-10 run
+    /// the English engine, 11-21 the Spanish. (`tvtts_set_voice` would switch
+    /// the synth's language by itself, but opening the right engine first
+    /// avoids building a throwaway one.)
     public static func language(forVoice index: Int) -> String {
-        index < 10 ? "en" : "es"
+        index < 11 ? "en" : "es"
     }
 
     /// One finished utterance: mono samples at `sampleRate`, plus the index

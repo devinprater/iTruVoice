@@ -5,9 +5,11 @@ as an iOS app with system-wide voices, via
 [OpenTV](https://github.com/RetroBunn/tv-decomp) — a portable-C decompilation
 verified byte-for-byte against the 1997 binary.
 
-Install the app and ten English voices appear for VoiceOver and Spoken
-Content: Peter, Sidney, Eager Eddie, Deep Douglas, Biff, Grandpa Amos,
-Melvin, Alex, Wanda and Julia.
+Install the app and twenty-two voices appear for VoiceOver and Spoken
+Content: eleven English -- Peter, Sidney, Eager Eddie, Deep Douglas, Biff,
+Grandpa Amos, Melvin, Alex, Wanda, Julia and Frank -- and eleven Spanish --
+Pedro, Jorge, Ricardo, Paco, Luis, Ezequiel, Rogelio, Carlos, Josefa,
+Isabel and Francisco.
 
 ## Layout
 
@@ -18,7 +20,7 @@ Melvin, Alex, Wanda and Julia.
 - `Sources/TruVoiceProvider` — the speech provider extension (an Audio Unit
   of type `ausp`, subtype `truv`).
 - `Sources/TruVoiceKit` — the Swift bridge over the C engine, shared by both.
-- `Vendor/upstream` — OpenTV pinned as a submodule (currently `7954947`).
+- `Vendor/upstream` — OpenTV pinned as a submodule (currently `38edfc3`).
 - `Vendor/generated` — `engine_struct.h` and `tvdata.s`, produced from the
   pinned upstream by `tools/regen_generated.sh`. The struct header is pure
   (byte-identical on every host; CI fails if the committed copy drifts). The

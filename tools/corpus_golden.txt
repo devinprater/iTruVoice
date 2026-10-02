@@ -1,5 +1,5 @@
 Hello world.	13420	8	0
-Hello world. This is TruVoice speaking.	34540	26	0
+Hello world. This is TruVoice speaking.	35310	26	0
 The quick brown fox jumps over the lazy dog.	35860	28	0
 Pack my box with five dozen liquor jugs.	37950	30	0
 Peter Piper picked a pepper.	25410	17	0
