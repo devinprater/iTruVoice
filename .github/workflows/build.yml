@@ -13,7 +13,7 @@ env:
   # Pinned so a change upstream cannot silently alter what ships. Bump
   # deliberately: move the submodule, re-run tools/regen_generated.sh, record
   # a new corpus golden, and commit all three together.
-  TVDECOMP_COMMIT: 79549473e10f5d4c58393acf24f116b8355e3585
+  TVDECOMP_COMMIT: 38edfc32ae2ca9faa81de642f15211c4809bb0cf
   XTOOL_VERSION: 1.19.2
 
 jobs:
@@ -56,6 +56,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/corpus_check.py
+
+      - name: Language latch (new upstream languages fail here)
+        run: |
+          set -euo pipefail
+          python3 tools/check_languages.py
 
       - name: Core checks (SSML, parameters)
         run: |

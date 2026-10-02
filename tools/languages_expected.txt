@@ -1,0 +1,7 @@
+# Production languages and their voice counts, pinned deliberately.
+# Managed by tools/check_languages.py --record. The check fails when the
+# pinned engine grows a language (or voices) that this file does not list,
+# which is the signal to wire the newcomer into the app -- see the checklist
+# the script prints. Format: "<two-letter code> <voice count>".
+en 11
+es 11
