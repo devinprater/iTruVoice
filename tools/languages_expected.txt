@@ -2,6 +2,13 @@
 # Managed by tools/check_languages.py --record. The check fails when the
 # pinned engine grows a language (or voices) that this file does not list,
 # which is the signal to wire the newcomer into the app -- see the checklist
-# the script prints. Format: "<two-letter code> <voice count>".
+# the script prints. Format: "<language code> <voice count>".
 en 11
 es 11
+# Japanese is compiled and not offered: its front end needs the 27 MB
+# jadic.bin, which upstream loads from disk at runtime, so iTruVoice does not
+# vendor it. Its ten voices sit at engine indices 22..31 and are absent from
+# VoiceCatalog; British English starts at 32 because the numbering runs across
+# every language.
+ja 10
+en-GB 11

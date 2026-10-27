@@ -1,0 +1,11 @@
+Hello world. This is TruVoice speaking.	35310	26	0
+The schedule is on the table.	23760	19	0
+Bath, path, and grass.	24860	14	0
+I can't dance in the garden.	26840	17	0
+Lieutenant Bernard is here.	22440	15	0
+Tomato, potato, and either.	29920	17	0
+She parked the car near the harbour.	29040	17	0
+Better butter, a cup of tea.	25410	17	0
+Nigel, Clive, Fiona and Imogen are speaking British English.	52910	43	0
+The orchestra played at half past eight.	31570	23	0
+Doctor Who travels in the TARDIS.	38610	31	0

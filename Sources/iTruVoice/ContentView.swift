@@ -83,7 +83,7 @@ struct ContentView: View {
                 }
 
                 Section {
-                    Text("Install this app, then find Peter, Sidney, Eager Eddie, Deep Douglas, Biff, Grandpa Amos, Melvin, Alex, Wanda and Julia among the English voices in VoiceOver or Spoken Content settings.")
+                    Text("Install this app, then find the English voices (Peter through Frank), the Spanish voices (Pedro through Francisco) and the British English voices (Nigel through Bernard) in VoiceOver or Spoken Content settings. The British voices are listed under English (United Kingdom).")
                 } header: {
                     Text("System voices")
                         .textCase(nil)

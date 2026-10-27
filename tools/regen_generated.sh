@@ -11,7 +11,8 @@ trap 'rm -rf "$TMP"' EXIT
 
 python3 "$UP/tools/gen_struct.py" "$UP/src/engine.fields" "$GEN/engine_struct.h"
 
-gcc -O2 -w -I"$UP/src" -I"$UP/include" -I"$GEN" -c "$UP"/src/engine/*.c \
+gcc -O2 -w -I"$UP/src" -I"$UP/include" -I"$UP/lang/eng/data" -I"$GEN" \
+  -c "$UP"/src/engine/*.c \
   "$UP"/src/syn_hifi.c "$UP"/src/port/api.c \
   "$UP"/src/port/tvtts.c "$UP"/src/port/msvcrt.c "$UP"/src/port/stubs.c \
   --output-dir="$TMP" 2>/dev/null || {
@@ -20,7 +21,8 @@ gcc -O2 -w -I"$UP/src" -I"$UP/include" -I"$GEN" -c "$UP"/src/engine/*.c \
            "$UP"/src/port/tvtts.c \
            "$UP"/src/port/msvcrt.c "$UP"/src/port/stubs.c; do
     n=$(basename "$f" .c)
-    gcc -O2 -w -I"$UP/src" -I"$UP/include" -I"$GEN" -c "$f" -o "$TMP/$n.o"
+    gcc -O2 -w -I"$UP/src" -I"$UP/include" -I"$UP/lang/eng/data" -I"$GEN" \
+      -c "$f" -o "$TMP/$n.o"
   done
 }
 # The assembly is committed, translated to what Apple clang assembles
@@ -29,7 +31,7 @@ gcc -O2 -w -I"$UP/src" -I"$UP/include" -I"$GEN" -c "$UP"/src/engine/*.c \
 # reads past the end of some tables into the next (see tv_ref.h), so
 # splitting it per symbol or reordering would move what those overreads land
 # on. macho_asm.py adds labels only; it moves no byte.
-python3 "$UP/tools/gen_data.py" "$UP/data/en/engine.tvdata" "$UP/src" \
+python3 "$UP/tools/gen_data.py" "$UP/lang/enu/data/engine.tvdata" "$UP/src" \
   "$GEN/tvdata.s" "$TMP"/*.o
 python3 "$ROOT/tools/macho_asm.py" "$GEN/tvdata.s"
 
@@ -39,16 +41,16 @@ python3 "$ROOT/tools/macho_asm.py" "$GEN/tvdata.s"
 # and its data is laid out under the same prefix in its own image.
 # Object names get an es_ prefix of their own: engine.c exists in both
 # trees. Spanish data is ~160K.
-python3 "$UP/tools/gen_struct.py" "$UP/es/engine.fields" \
+python3 "$UP/tools/gen_struct.py" "$UP/lang/spa/engine/engine.fields" \
   "$GEN/es_engine_struct.h"
-(cd "$UP" && python3 tools/gen_rename.py es,es_port es_ "$GEN/es_rename.h")
+(cd "$UP" && python3 tools/gen_rename.py lang/spa/engine,lang/spa/port es_ "$GEN/es_rename.h")
 mkdir -p "$TMP/es"
-for f in "$UP"/es/*.c "$UP"/es_port/*.c; do
+for f in "$UP"/lang/spa/engine/*.c "$UP"/lang/spa/port/*.c; do
   n="es_$(basename "$f" .c).o"
-  gcc -O2 -w -I"$UP/es" -I"$UP/src" -I"$UP/include" -I"$GEN" \
+  gcc -O2 -w -I"$UP/lang/spa/engine" -I"$UP/src" -I"$UP/include" -I"$GEN" \
     -include "$GEN/es_rename.h" -c "$f" -o "$TMP/es/$n"
 done
-python3 "$UP/tools/gen_data.py" --prefix es_ "$UP/data/es/engine.tvdata" \
-  "$UP/es,$UP/es_port" "$GEN/tvdata_es.s" "$TMP"/es/*.o
+python3 "$UP/tools/gen_data.py" --prefix es_ "$UP/lang/spa/data/engine.tvdata" \
+  "$UP/lang/spa/engine,$UP/lang/spa/port" "$GEN/tvdata_es.s" "$TMP"/es/*.o
 python3 "$ROOT/tools/macho_asm.py" "$GEN/tvdata_es.s"
 echo "regenerated: $(ls -la "$GEN")"

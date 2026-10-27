@@ -8,6 +8,9 @@ let engineSources = [
     "upstream/src/engine/engine.c",
     "upstream/src/engine/feed.c",
     "upstream/src/engine/frame.c",
+    // gb.c holds General British's vowel targets and stage-1 substitutions;
+    // the en-GB row in upstream/src/port/api.c calls into it.
+    "upstream/src/engine/gb.c",
     "upstream/src/engine/generate.c",
     "upstream/src/engine/input.c",
     "upstream/src/engine/layout.c",
@@ -43,6 +46,32 @@ let engineSources = [
     "generated/tvdata.s",
 ]
 
+// The two language ports that ride on the English engine. General British
+// only wraps the American entry points with stage 3's vowel targets re-aimed
+// (upstream/lang/eng/port, plus src/engine/gb.c above); Japanese is a front
+// end that drives the synthesiser below stage 3. Both are here because
+// upstream/src/port/api.c carries their rows unconditionally -- api.c names
+// every language the library has, so the link needs all of them. iTruVoice
+// offers the English, Spanish and British voices only: Japanese needs the
+// 27 MB dictionary upstream loads from disk at runtime, which is not vendored.
+let languageSources = [
+    "upstream/lang/eng/port/tvtts_engb.c",
+    "upstream/lang/jpn/port/ja_devoice_tab.c",
+    "upstream/lang/jpn/port/ja_dict.c",
+    "upstream/lang/jpn/port/ja_digit.c",
+    "upstream/lang/jpn/port/ja_frame.c",
+    "upstream/lang/jpn/port/ja_front.c",
+    "upstream/lang/jpn/port/ja_g2p.c",
+    "upstream/lang/jpn/port/ja_g2p_tab.c",
+    "upstream/lang/jpn/port/ja_mora.c",
+    "upstream/lang/jpn/port/ja_njd.c",
+    "upstream/lang/jpn/port/ja_ojt.c",
+    "upstream/lang/jpn/port/ja_pitch.c",
+    "upstream/lang/jpn/port/ja_tables.c",
+    "upstream/lang/jpn/port/ja_voice.c",
+    "upstream/lang/jpn/port/tvtts_ja.c",
+]
+
 // The Spanish engine: same library, every name es_-prefixed. The rename
 // header (Vendor/generated/es_rename.h) must be force-included into exactly
 // these translation units -- a global -include would rename the English
@@ -50,45 +79,45 @@ let engineSources = [
 // list: the directories also hold non-sources (engine.fields) that SwiftPM's
 // expansion hands to clang as C, which fails the build.
 let spanishSources = [
-    "upstream/es/adjust.c",
-    "upstream/es/bittab.c",
-    "upstream/es/cluster.c",
-    "upstream/es/contour.c",
-    "upstream/es/control.c",
-    "upstream/es/engine.c",
-    "upstream/es/escape.c",
-    "upstream/es/flush.c",
-    "upstream/es/generate.c",
-    "upstream/es/input.c",
-    "upstream/es/interp.c",
-    "upstream/es/list.c",
-    "upstream/es/node.c",
-    "upstream/es/number.c",
-    "upstream/es/params.c",
-    "upstream/es/phone.c",
-    "upstream/es/preformat.c",
-    "upstream/es/prosody.c",
-    "upstream/es/reset.c",
-    "upstream/es/ring.c",
-    "upstream/es/rule.c",
-    "upstream/es/segment.c",
-    "upstream/es/stage.c",
-    "upstream/es/stage0.c",
-    "upstream/es/stage1.c",
-    "upstream/es/stage2.c",
-    "upstream/es/stage3.c",
-    "upstream/es/stage3seg.c",
-    "upstream/es/stage4.c",
-    "upstream/es/synth.c",
-    "upstream/es/tables.c",
-    "upstream/es/textin.c",
-    "upstream/es/track.c",
-    "upstream/es/util.c",
+    "upstream/lang/spa/engine/adjust.c",
+    "upstream/lang/spa/engine/bittab.c",
+    "upstream/lang/spa/engine/cluster.c",
+    "upstream/lang/spa/engine/contour.c",
+    "upstream/lang/spa/engine/control.c",
+    "upstream/lang/spa/engine/engine.c",
+    "upstream/lang/spa/engine/escape.c",
+    "upstream/lang/spa/engine/flush.c",
+    "upstream/lang/spa/engine/generate.c",
+    "upstream/lang/spa/engine/input.c",
+    "upstream/lang/spa/engine/interp.c",
+    "upstream/lang/spa/engine/list.c",
+    "upstream/lang/spa/engine/node.c",
+    "upstream/lang/spa/engine/number.c",
+    "upstream/lang/spa/engine/params.c",
+    "upstream/lang/spa/engine/phone.c",
+    "upstream/lang/spa/engine/preformat.c",
+    "upstream/lang/spa/engine/prosody.c",
+    "upstream/lang/spa/engine/reset.c",
+    "upstream/lang/spa/engine/ring.c",
+    "upstream/lang/spa/engine/rule.c",
+    "upstream/lang/spa/engine/segment.c",
+    "upstream/lang/spa/engine/stage.c",
+    "upstream/lang/spa/engine/stage0.c",
+    "upstream/lang/spa/engine/stage1.c",
+    "upstream/lang/spa/engine/stage2.c",
+    "upstream/lang/spa/engine/stage3.c",
+    "upstream/lang/spa/engine/stage3seg.c",
+    "upstream/lang/spa/engine/stage4.c",
+    "upstream/lang/spa/engine/synth.c",
+    "upstream/lang/spa/engine/tables.c",
+    "upstream/lang/spa/engine/textin.c",
+    "upstream/lang/spa/engine/track.c",
+    "upstream/lang/spa/engine/util.c",
     // voices.c carries OpenTV's own extra Spanish voices (Fransisco,
     // added upstream 2026-10-01).
-    "upstream/es/voices.c",
-    "upstream/es_port/msvcrt_es.c",
-    "upstream/es_port/tvtts_es.c",
+    "upstream/lang/spa/engine/voices.c",
+    "upstream/lang/spa/port/msvcrt_es.c",
+    "upstream/lang/spa/port/tvtts_es.c",
     "generated/tvdata_es.s",
 ]
 
@@ -146,10 +175,14 @@ let package = Package(
             name: "CTruVoice",
             dependencies: ["CTruVoiceES"],
             path: "Vendor",
-            sources: engineSources,
+            sources: engineSources + languageSources,
             publicHeadersPath: "upstream/include",
             cSettings: [
                 .headerSearchPath("upstream/src"),
+                // gb.c includes gb_vowels.h and gb_lexicon.h; the Japanese
+                // front end includes ja.h and friends from its own port dir.
+                .headerSearchPath("upstream/lang/eng/data"),
+                .headerSearchPath("upstream/lang/jpn/port"),
                 .headerSearchPath("generated"),
             ]
         ),
@@ -165,7 +198,7 @@ let package = Package(
             sources: spanishSources,
             publicHeadersPath: "es_include",
             cSettings: [
-                .headerSearchPath("upstream/es"),
+                .headerSearchPath("upstream/lang/spa/engine"),
                 .headerSearchPath("upstream/src"),
                 .headerSearchPath("upstream/include"),
                 .headerSearchPath("generated"),

@@ -13,7 +13,7 @@ env:
   # Pinned so a change upstream cannot silently alter what ships. Bump
   # deliberately: move the submodule, re-run tools/regen_generated.sh, record
   # a new corpus golden, and commit all three together.
-  TVDECOMP_COMMIT: 38edfc32ae2ca9faa81de642f15211c4809bb0cf
+  TVDECOMP_COMMIT: 8488e51f5bca5685590186693b76dc61bf23fdaf
   XTOOL_VERSION: 1.19.2
 
 jobs:
@@ -61,6 +61,14 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/check_languages.py
+
+      - name: British English proof (upstream gb_check)
+        run: |
+          set -euo pipefail
+          # The accent has to reach the audio, American has to be untouched,
+          # and the /r/ rules have to hold. Recorded output; a diff is read,
+          # not re-recorded.
+          python3 tools/gb_check.py
 
       - name: Core checks (SSML, parameters)
         run: |

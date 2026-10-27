@@ -64,49 +64,27 @@ Wire it into the app before re-pinning with --record:
   6. Provider + app: new voices appear automatically through
      VoiceCatalog.all; check sample text and any locale-gated UI.
   7. README voice paragraph and a ReleaseNotes entry.
+
+A language the app cannot ship is compiled but not surfaced. Japanese is
+that case: its front end needs the 27 MB jadic.bin, which upstream loads
+from disk at runtime, so its ten voices exist in the engine numbering and
+are not in VoiceCatalog. Record the row here anyway -- the pin describes the
+engine, not the menu -- and say in the comment why it is not offered.
 """
 
 
 def build(workdir):
-    objdir = os.path.join(workdir, "obj")
-    os.makedirs(objdir, exist_ok=True)
-    objs = []
-    for src in corpus_check.ENGINE_SRCS:
-        obj = os.path.join(objdir, os.path.basename(src) + ".o")
-        subprocess.run(
-            ["cc", "-O2", "-w", "-I", os.path.join(corpus_check.UP, "src"),
-             "-I", os.path.join(corpus_check.UP, "include"),
-             "-I", corpus_check.GEN, "-c", src, "-o", obj],
-            check=True,
-        )
-        objs.append(obj)
-    subprocess.run(["cc", "-w", "-c",
-                    os.path.join(corpus_check.GEN, "tvdata.s"),
-                    "-o", os.path.join(objdir, "tvdata.o")], check=True)
-    objs.append(os.path.join(objdir, "tvdata.o"))
-    for src in corpus_check.ES_SRCS:
-        obj = os.path.join(objdir, "es_" + os.path.basename(src) + ".o")
-        subprocess.run(
-            ["cc", "-O2", "-w", "-I", os.path.join(corpus_check.UP, "es"),
-             "-I", os.path.join(corpus_check.UP, "src"),
-             "-I", os.path.join(corpus_check.UP, "include"),
-             "-I", corpus_check.GEN,
-             "-include", os.path.join(corpus_check.GEN, "es_rename.h"),
-             "-c", src, "-o", obj],
-            check=True,
-        )
-        objs.append(obj)
-    subprocess.run(["cc", "-w", "-c",
-                    os.path.join(corpus_check.GEN, "tvdata_es.s"),
-                    "-o", os.path.join(objdir, "tvdata_es.o")], check=True)
-    objs.append(os.path.join(objdir, "tvdata_es.o"))
+    # One source of truth for what the library is made of: the corpus proof
+    # compiles the same objects, including the British and Japanese rows that
+    # upstream's api.c names unconditionally.
+    objs = corpus_check.build_objects(workdir)
     drv = os.path.join(workdir, "drv.c")
     with open(drv, "w") as f:
         f.write(DRIVER)
     exe = os.path.join(workdir, "langcheck")
     subprocess.run(["cc", "-O2", "-w",
                     "-I", os.path.join(corpus_check.UP, "include"),
-                    "-o", exe, drv] + objs, check=True)
+                    "-o", exe, drv] + objs + ["-lm"], check=True)
     return exe
 
 
@@ -127,7 +105,7 @@ def main():
     if args.record:
         with open(args.expected, "w") as f:
             f.write("# Managed by tools/check_languages.py --record.\n")
-            f.write("# Format: \"<two-letter code> <voice count>\".\n")
+            f.write("# Format: \"<language code> <voice count>\".\n")
             f.write("\n".join(actual) + "\n")
         print(f"recorded {len(actual)} languages -> {args.expected}")
         return

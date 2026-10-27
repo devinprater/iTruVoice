@@ -8,11 +8,17 @@ engine is deterministic given its data, so a count change means the code, the
 generated files, or the data moved -- rebuild the golden deliberately with
 --record after reading the diff, never blindly.
 
+tools/corpus_gb.txt is the same proof for General British: those lines run on
+an en-GB synth and match tools/corpus_gb_golden.txt. A separate file because a
+British count differs from the American one by design. Upstream's own
+tests/gb_check.c is the deeper proof (the accent reaches the formants, the
+American path is untouched, and the /r/ rules hold); tools/gb_check.py runs it
+against these same objects.
+
 Usage: corpus_check.py [--record] [--workdir DIR]
 """
 import argparse
 import os
-import struct
 import subprocess
 import sys
 import tempfile
@@ -22,6 +28,8 @@ ROOT = os.path.dirname(HERE)
 UP = os.path.join(ROOT, "Vendor", "upstream")
 GEN = os.path.join(ROOT, "Vendor", "generated")
 
+# The English engine. Upstream reorganized its tree by language, so the
+# Spanish and Japanese sources and data no longer live beside src/.
 ENGINE_SRCS = sorted(
     os.path.join(UP, "src", "engine", f)
     for f in os.listdir(os.path.join(UP, "src", "engine"))
@@ -30,9 +38,7 @@ ENGINE_SRCS = sorted(
     # syn_hifi.c carries the resampled 16 kHz tables (g_synhifi_*) that
     # synth.c references; api.c carries tvtts_create and the speak entry
     # points. port/main.c is the upstream CLI and is NOT linked -- drv.c
-    # below provides main. es_stubs.c is ours (ROOT/Vendor): fail-closed
-    # stand-ins for the Spanish backend, which api.c references
-    # unconditionally while iTruVoice ships English only.
+    # below provides main.
     os.path.join(UP, "src", "syn_hifi.c"),
     os.path.join(UP, "src", "port", "api.c"),
     # sing.c carries the score compiler AND the text-pipeline pieces every
@@ -44,16 +50,39 @@ ENGINE_SRCS = sorted(
     os.path.join(UP, "src", "port", "stubs.c"),
 ]
 
-# The Spanish engine, compiled es_-prefixed exactly like the regen script
-# and the CTruVoiceES target do: -I upstream/es plus the generated rename
-# header force-included. Object names prefixed: engine.c exists in both
-# trees.
-ES_SRCS = sorted(
-    os.path.join(UP, d, f)
-    for d in ("es", "es_port")
-    for f in os.listdir(os.path.join(UP, d))
+EN_INCLUDES = [os.path.join(UP, "src"), os.path.join(UP, "include"),
+               os.path.join(UP, "lang", "eng", "data"), GEN]
+
+# The language ports api.c names unconditionally: British English (wrappers
+# over the American engine; src/engine/gb.c holds its targets) and Japanese
+# (a front end below stage 3). Both must link, whether or not the app offers
+# their voices -- iTruVoice offers British, not Japanese, whose 27 MB
+# dictionary is loaded from disk and is not vendored.
+GB_SRCS = sorted(
+    os.path.join(UP, "lang", "eng", "port", f)
+    for f in os.listdir(os.path.join(UP, "lang", "eng", "port"))
     if f.endswith(".c")
 )
+JA_SRCS = sorted(
+    os.path.join(UP, "lang", "jpn", "port", f)
+    for f in os.listdir(os.path.join(UP, "lang", "jpn", "port"))
+    if f.endswith(".c")
+)
+JA_INCLUDES = [os.path.join(UP, "src"), os.path.join(UP, "include"),
+               os.path.join(UP, "lang", "jpn", "port"), GEN]
+
+# The Spanish engine, compiled es_-prefixed exactly like the regen script
+# and the CTruVoiceES target do: its own include dir plus the generated
+# rename header force-included. Object names prefixed: engine.c exists in
+# both trees.
+ES_SRCS = sorted(
+    os.path.join(UP, "lang", "spa", sub, f)
+    for sub in ("engine", "port")
+    for f in os.listdir(os.path.join(UP, "lang", "spa", sub))
+    if f.endswith(".c")
+)
+ES_INCLUDES = [os.path.join(UP, "lang", "spa", "engine"),
+               os.path.join(UP, "src"), os.path.join(UP, "include"), GEN]
 
 DRIVER = r"""
 #include <stdio.h>
@@ -73,10 +102,23 @@ static int on_event(const tvtts_event *ev, void *user) {
     return 0;
 }
 int main(int argc, char **argv) {
-    /* argv: rate voice_index ; lines on stdin, counts on stdout */
+    /* argv: rate voice [language]; lines on stdin, counts on stdout.
+     * With a language, the voice becomes that language's first: the
+     * numbering runs across every language, so voice 0 on a British synth
+     * is Peter, who is English, and tvtts_set_voice would switch the synth
+     * to him -- exactly how a GB bug comes to look like "nothing
+     * happened". */
     uint32_t rate = (uint32_t)atoi(argv[1]);
     int voice = atoi(argv[2]);
-    tvtts_synth *s = tvtts_create(rate);
+    const char *lang = argc > 3 ? argv[3] : "en";
+    if (argc > 3) {
+        int i, n = tvtts_voice_count();
+        for (i = 0; i < n; i++) {
+            const char *c = tvtts_voice_language(i);
+            if (c != NULL && strcmp(c, lang) == 0) { voice = i; break; }
+        }
+    }
+    tvtts_synth *s = tvtts_create_lang(rate, lang);
     if (!s) { printf("CREATE-FAILED\n"); return 1; }
     tvtts_set_voice(s, voice);
     char line[4096];
@@ -94,52 +136,89 @@ int main(int argc, char **argv) {
 """
 
 
-def build(workdir):
+def cc(args):
+    subprocess.run(["cc", "-O2", "-w"] + args, check=True)
+
+
+def compile_group(objs, objdir, sources, includes, prefix=""):
+    for src in sources:
+        obj = os.path.join(objdir, prefix + os.path.basename(src) + ".o")
+        args = []
+        for inc in includes:
+            args += ["-I", inc]
+        cc(args + ["-c", src, "-o", obj])
+        objs.append(obj)
+
+
+def build_objects(workdir):
+    """Compile every translation unit the library needs; return the objects.
+
+    Shared with tools/gb_check.py, so both proofs run against one build."""
     objdir = os.path.join(workdir, "obj")
     os.makedirs(objdir, exist_ok=True)
     objs = []
-    for src in ENGINE_SRCS:
-        obj = os.path.join(objdir, os.path.basename(src) + ".o")
-        subprocess.run(
-            ["cc", "-O2", "-w", "-I", os.path.join(UP, "src"),
-             "-I", os.path.join(UP, "include"), "-I", GEN,
-             "-c", src, "-o", obj],
-            check=True,
-        )
-        objs.append(obj)
+    compile_group(objs, objdir, ENGINE_SRCS, EN_INCLUDES)
+    compile_group(objs, objdir, GB_SRCS, EN_INCLUDES, "gb_")
+    compile_group(objs, objdir, JA_SRCS, JA_INCLUDES, "ja_")
     # The data image lives in the generated assembly.
-    subprocess.run(["cc", "-w", "-c", os.path.join(GEN, "tvdata.s"),
-                    "-o", os.path.join(objdir, "tvdata.o")], check=True)
-    objs.append(os.path.join(objdir, "tvdata.o"))
+    for asm in ("tvdata.s", "tvdata_es.s"):
+        obj = os.path.join(objdir, asm.replace(".s", ".o"))
+        cc(["-c", os.path.join(GEN, asm), "-o", obj])
+        objs.append(obj)
     # Spanish: same objects the regen script feeds gen_data, plus its own
     # image. The rename header is generated and committed by regen.
     for src in ES_SRCS:
         obj = os.path.join(objdir, "es_" + os.path.basename(src) + ".o")
-        subprocess.run(
-            ["cc", "-O2", "-w", "-I", os.path.join(UP, "es"),
-             "-I", os.path.join(UP, "src"),
-             "-I", os.path.join(UP, "include"), "-I", GEN,
-             "-include", os.path.join(GEN, "es_rename.h"),
-             "-c", src, "-o", obj],
-            check=True,
-        )
+        cc(["-I", ES_INCLUDES[0], "-I", ES_INCLUDES[1], "-I", ES_INCLUDES[2],
+            "-I", GEN, "-include", os.path.join(GEN, "es_rename.h"),
+            "-c", src, "-o", obj])
         objs.append(obj)
-    subprocess.run(["cc", "-w", "-c", os.path.join(GEN, "tvdata_es.s"),
-                    "-o", os.path.join(objdir, "tvdata_es.o")], check=True)
-    objs.append(os.path.join(objdir, "tvdata_es.o"))
+    return objs
+
+
+def build(workdir):
+    objs = build_objects(workdir)
     drv = os.path.join(workdir, "drv.c")
     with open(drv, "w") as f:
         f.write(DRIVER)
     exe = os.path.join(workdir, "tvcheck")
-    subprocess.run(["cc", "-O2", "-w", "-I", os.path.join(UP, "include"),
-                    "-o", exe, drv] + objs, check=True)
+    # -lm: the Japanese front end's pitch contour uses exp and log.
+    cc(["-I", os.path.join(UP, "include"), "-o", exe, drv] + objs + ["-lm"])
     return exe
 
 
-def run(exe, lines, rate="11025", voice="0"):
-    p = subprocess.run([exe, rate, voice], input="\n".join(lines) + "\n",
+def run(exe, lines, rate="11025", voice="0", lang=None):
+    argv = [exe, rate, voice]
+    if lang:
+        argv.append(lang)
+    p = subprocess.run(argv, input="\n".join(lines) + "\n",
                        capture_output=True, text=True, check=True)
     return p.stdout.splitlines()
+
+
+def check_one(exe, corpus, golden, record, lang=None, voice="0"):
+    with open(os.path.join(HERE, corpus)) as f:
+        lines = [ln.strip() for ln in f if ln.strip()]
+    # (line, total samples, nonzero chunks, rc); nonzero chunks > 0 is audible.
+    out = run(exe, lines, voice=voice, lang=lang)
+    golden_path = os.path.join(HERE, golden)
+    if record:
+        with open(golden_path, "w") as f:
+            f.write("\n".join(out) + "\n")
+        print(f"recorded {len(out)} lines -> {golden_path}")
+        return True
+    with open(golden_path) as f:
+        want = [ln.strip() for ln in f if ln.strip()]
+    if out == want:
+        print(f"{corpus} OK: {len(out)} lines, all golden")
+        return True
+    print(f"MISMATCH: {corpus}: {len(out)} produced, {len(want)} golden")
+    for a, b in zip(out, want):
+        if a != b:
+            print(f"  got    {a}\n  golden {b}")
+    if len(out) != len(want):
+        print("  (different line counts)")
+    return False
 
 
 def main():
@@ -148,32 +227,13 @@ def main():
     ap.add_argument("--workdir", default=None)
     args = ap.parse_args()
 
-    with open(os.path.join(HERE, "corpus.txt")) as f:
-        lines = [ln.strip() for ln in f if ln.strip()]
-
     workdir = args.workdir or tempfile.mkdtemp(prefix="itruvoice-corpus.")
     exe = build(workdir)
-    # (line, total samples, nonzero chunks, rc); nonzero chunks > 0 means audible.
-    out = run(exe, lines)
-    golden_path = os.path.join(HERE, "corpus_golden.txt")
-    if args.record:
-        with open(golden_path, "w") as f:
-            f.write("\n".join(out) + "\n")
-        print(f"recorded {len(out)} lines -> {golden_path}")
-        return
-
-    with open(golden_path) as f:
-        golden = [ln.strip() for ln in f if ln.strip()]
-    if out == golden:
-        print(f"corpus OK: {len(out)} lines, all golden")
-        return
-    print(f"MISMATCH: {len(out)} produced, {len(golden)} golden")
-    for a, b in zip(out, golden):
-        if a != b:
-            print(f"  got    {a}\n  golden {b}")
-    if len(out) != len(golden):
-        print("  (different line counts)")
-    sys.exit(1)
+    ok = check_one(exe, "corpus.txt", "corpus_golden.txt", args.record)
+    ok &= check_one(exe, "corpus_gb.txt", "corpus_gb_golden.txt", args.record,
+                    lang="en-GB")
+    if not ok:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

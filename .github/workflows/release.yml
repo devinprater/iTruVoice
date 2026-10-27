@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 env:
-  TVDECOMP_COMMIT: 38edfc32ae2ca9faa81de642f15211c4809bb0cf
+  TVDECOMP_COMMIT: 8488e51f5bca5685590186693b76dc61bf23fdaf
 
 jobs:
   ipa:

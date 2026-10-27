@@ -21,27 +21,77 @@ public final class TruVoice {
     /// Synths open at it directly: `tvtts_create_lang` takes 16000.
     public static let sampleRate: UInt32 = 16000
 
-    /// The twenty-two voices in engine order: the eleven English (voice 0 is
-    /// Peter, the voice the phoneme tables were written for; the rest are
-    /// parametric deviations -- Frank, from the MindMaker TextAssist build,
-    /// joined at index 10 upstream 2026-10-01) then the eleven Spanish, Pedro
-    /// through Isabel plus Francisco at index 21. The names come from the
-    /// engine in order, measured against the linked tree -- `tvtts_voice_name`
-    /// 0 through 21 (headless probe, 16 kHz).
-    public static let voiceNames = [
-        "Peter", "Sidney", "Eager Eddie", "Deep Douglas", "Biff",
-        "Grandpa Amos", "Melvin", "Alex", "Wanda", "Julia", "Frank",
-        "Pedro", "Jorge", "Ricardo", "Paco", "Luis",
-        "Ezequiel", "Rogelio", "Carlos", "Josefa", "Isabel", "Francisco",
+    /// One voice the app offers: its number in the engine's list, its name,
+    /// the engine language row that speaks it, and the tag the system is told.
+    public struct VoiceSpec: Sendable {
+        public let index: Int
+        public let name: String
+        public let language: String   // engine row: "en", "es", "en-GB"
+        public let locale: String     // BCP-47 for the host: en-US, es-ES, en-GB
+    }
+
+    /// The thirty-three voices the app offers, in engine order.
+    ///
+    /// The numbers are the engine's own and run across every language, so a
+    /// number is not a position in this array: English is 0 through 10
+    /// (Peter, the voice the phoneme tables were written for, through Frank,
+    /// who joined at 10 upstream 2026-10-01); Spanish 11 through 21 (Pedro
+    /// through Francisco); Japanese 22 through 31; British English 32
+    /// through 42 (Nigel through Bernard). Japanese is compiled into the
+    /// library and not offered -- its front end needs the 27 MB dictionary
+    /// upstream reads from disk at runtime, which is not vendored -- so this
+    /// table skips 22 through 31.
+    ///
+    /// British English is not a new vocal tract. Upstream re-aims stage 3's
+    /// vowel targets at Cruttenden's General British set and applies the
+    /// accent's phoneme substitutions, so each British voice is the American
+    /// speaker of the same number minus 32, under a British name: Peter is
+    /// Nigel, Deep Douglas is Deep Duncan, Julia is Imogen. The names come
+    /// from the engine, measured against the linked tree with `tvtts_voice_name`
+    /// (headless probe, 16 kHz).
+    public static let voices: [VoiceSpec] = [
+        VoiceSpec(index: 0, name: "Peter", language: "en", locale: "en-US"),
+        VoiceSpec(index: 1, name: "Sidney", language: "en", locale: "en-US"),
+        VoiceSpec(index: 2, name: "Eager Eddie", language: "en", locale: "en-US"),
+        VoiceSpec(index: 3, name: "Deep Douglas", language: "en", locale: "en-US"),
+        VoiceSpec(index: 4, name: "Biff", language: "en", locale: "en-US"),
+        VoiceSpec(index: 5, name: "Grandpa Amos", language: "en", locale: "en-US"),
+        VoiceSpec(index: 6, name: "Melvin", language: "en", locale: "en-US"),
+        VoiceSpec(index: 7, name: "Alex", language: "en", locale: "en-US"),
+        VoiceSpec(index: 8, name: "Wanda", language: "en", locale: "en-US"),
+        VoiceSpec(index: 9, name: "Julia", language: "en", locale: "en-US"),
+        VoiceSpec(index: 10, name: "Frank", language: "en", locale: "en-US"),
+        VoiceSpec(index: 11, name: "Pedro", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 12, name: "Jorge", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 13, name: "Ricardo", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 14, name: "Paco", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 15, name: "Luis", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 16, name: "Ezequiel", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 17, name: "Rogelio", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 18, name: "Carlos", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 19, name: "Josefa", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 20, name: "Isabel", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 21, name: "Francisco", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 32, name: "Nigel", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 33, name: "Clive", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 34, name: "Eager Edwin", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 35, name: "Deep Duncan", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 36, name: "Rupert", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 37, name: "Gramps Amos", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 38, name: "Malcolm", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 39, name: "Alistair", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 40, name: "Fiona", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 41, name: "Imogen", language: "en-GB", locale: "en-GB"),
+        VoiceSpec(index: 42, name: "Bernard", language: "en-GB", locale: "en-GB"),
     ]
 
-    /// The language for a voice index: the engine carries one combined list,
-    /// so the index picks both the parameter row and the engine -- 0-10 run
-    /// the English engine, 11-21 the Spanish. (`tvtts_set_voice` would switch
-    /// the synth's language by itself, but opening the right engine first
-    /// avoids building a throwaway one.)
-    public static func language(forVoice index: Int) -> String {
-        index < 11 ? "en" : "es"
+    /// The engine's spec for a voice number, or nil if the app does not offer
+    /// that voice. (`tvtts_set_voice` would switch the synth's language by
+    /// itself, but opening the right engine first avoids building a throwaway
+    /// one -- and on a British synth voice 0 is Peter, who would switch it
+    /// straight back to American.)
+    public static func spec(forVoice index: Int) -> VoiceSpec? {
+        voices.first { $0.index == index }
     }
 
     /// One finished utterance: mono samples at `sampleRate`, plus the index
@@ -56,8 +106,8 @@ public final class TruVoice {
     private let voiceIndex: Int
 
     public init?(voice: Int) {
-        guard (0..<Self.voiceNames.count).contains(voice),
-              let s = tvtts_create_lang(TruVoice.sampleRate, Self.language(forVoice: voice)) else { return nil }
+        guard let spec = Self.spec(forVoice: voice),
+              let s = tvtts_create_lang(TruVoice.sampleRate, spec.language) else { return nil }
         synth = s
         voiceIndex = voice
         tvtts_set_voice(s, Int32(voice))

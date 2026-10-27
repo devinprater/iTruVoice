@@ -1,0 +1,105 @@
+text                 General British          rule
+far off              &Fr1R&o1F.               link                WRONG
+                     &Fr1R%oF.                 <- wanted
+four aces            &Fg1R&A1S|Z.             link
+answer it            &r1NS3R%iTp.             link
+wear out             &Wk1R%f1Tp.              link
+fur inside           &F31R%iNSI1Dp.           link
+near it              %N41R%iTp.               link
+boring               &Bg1R|~p.                link, suffix
+orange               &o1R|NJz.                link, inside a word
+forest               &Fo1R|STp.               link, inside a word
+during               %Jzc1Ri~p.               link, inside a word
+far behind           &Fr1%BEdI1NDp.           no link
+four cats            &Fg1&Ka1TS.              no link
+bar closed           &Br1&KLO1ZDp.            no link
+fur coat             &F31&KO1Tp.              no link
+vanilla essence      &V|Ni1L3R&e1S|NS.        intrusive, schwa
+vanilla pudding      &V|Ni1L3&Pu1D|~p.        no link
+a book               %@&Bu1Kp.                weak form, no fold
+straw in the wind    &STRw1%iN%x@&Wi1NDp.     refuse (d)
+law and order        &Lw1%@N&g1D3.            refuse (d)
+spa is open          &SBr1%iZ&O1P|N.          refuse (d)
+card park bird north &Kr1D&Pr1K&B31D&Ng1X.    already non-rhotic
+start large heart    &SDr1q&Lr1Jz&dr1Tp.      already non-rhotic
+word work first      &W31D&W31K&F31STp.       already non-rhotic
+
+city                 &Si1TE.                  rule
+pretty               &PRi1TE.                 rule
+better               &Be1T3.                  rule
+get up               &Ge1T%v1Pp.              rule, across a word
+not a lot            %No1T%@&Lo1Tp.           rule, across a word
+water                &Ww1T3.                  dictionary, <t>
+little               &Li1Tl.                  dictionary, <t>, syllabic l kept
+metal                &Me1Tl.                  dictionary, <t>, syllabic l kept
+leader               &LE1D3.                  dictionary, <d>
+bottle               &Bo1Tl.                  syllabic l kept
+title                &TI1Tl.                  syllabic l kept
+not very             %No1q%Ve1RE.             glottal, 7.10.2(5)
+that place           %xaq&PLA1S.              glottal, 7.10.2(5)
+get back             &Ge1q&Ba1Kp.             glottal, 7.10.2(5)
+little bottle        &Li1Tl&Bo1Tl.            no glottal before /l/
+follow               &Fo1LO.                  clear /l/ before a vowel
+colour               &Kv1L3.                  clear /l/ before a vowel
+lily                 &Li1LE.                  clear /l/ before a vowel
+field                &FE1jDp.                 dark /l/ before a consonant
+milk                 &Mi1jKp.                 dark /l/ before a consonant
+feel                 &FE1j.                   dark /l/ at the end
+writer/rider         &RI1T3.     &RI1D3.      must differ
+latter/ladder        &La1T3.     &La1D3.      must differ
+
+poor                 &Pg1.                    CURE->NORTH
+sure                 &sg1.                    CURE->NORTH
+tour                 &Tg1.                    CURE->NORTH
+moor                 &Mg1.                    CURE->NORTH
+tourist              &Tg1R|STp.               CURE->NORTH, /r/ prevocalic
+pure                 &PYc1.                   stays CURE
+cure                 &KYc1.                   stays CURE, left out on purpose
+gourd                &Gc1Dp.                  stays CURE
+lure                 &Lc1.                    stays CURE
+fewer                &FU13.                   stays, /u:/+/@/
+Mary                 &Mk1RE.                  single <r>: SQUARE
+marry                &Ma1RE.                  <arr>: TRAP
+merry                &Me1RE.                  <err>: DRESS
+berry                &Be1RE.                  <err>, and the /r/ put back
+carry                &Ka1RE.                  <arr>: TRAP
+very                 %Ve1RE.                  short list: DRESS
+vary                 &Vk1RE.                  not on it: stays SQUARE
+parent               &Pk1R|NTp.               single <r>: SQUARE
+librarian            &LIBRk1REY@N.            single <r>: SQUARE
+sorry                &So1RE.                  <orr>: LOT
+borrow               &Bo1RO.                  <orr>: LOT
+porridge             &Po1R|Jz.                <orr>: LOT
+moral                &Mo1R@j.                 short list: LOT
+orange               &o1R|NJz.                short list: LOT
+quarrel              &KWo1R@j.                <a> after qu: LOT
+warrant              &Wo1R@NTp.               <a> after w: LOT
+boat                 &BO1Tp.                  GOAT untouched
+awful                &w1Fl.                   syllabic l kept
+uncle                &v1~Kl.                  syllabic l kept
+whistle              &Wi1Sl.                  syllabic l kept
+able                 &A1Bl.                   syllabic l kept
+apple                &a1Pl.                   syllabic l kept
+barrel               &Ba1R@j.                 schwa kept after /r/
+laurel               &Lo1R@j.                 list: LOT, and the schwa after /r/
+squirrel             &SKWi1R@j.               <irr>: KIT
+stirrup              &SDi1R@Pp.               <irr>: KIT
+mirror               &Mi1R3.                  <irr>: KIT
+irritate             &i1R|TATp.               <irr>, first vowel only
+hurry                &H31RE.                  <urr> untouched
+worry                &Wv1RE.                  list: <orr> after w is STRUT
+fire                 &FI1Y3.                  no `5`: PRICE + schwa
+hire                 &HI1Y3.                  no `5`: PRICE + schwa
+tyre is              &TI1Y3R%i1Z.             ...and it can still link
+
+flag forced by hand: seen=1  audio changed
+
+text                         en           en-GB        flag seen
+nurse bird heard             802a3f0f     a0fa4317     us=0 gb=1
+start far car father         b93cbe3f     b7f68a7f     us=0 gb=1
+four more thought            cf09a0df     ee3e7417     us=0 gb=1
+square fair hair             22ac78e7     416addd7     us=0 gb=1
+near here cure poor          22f9d337     84e8ec37     us=0 gb=1
+the north wind and the sun   46783d27     c92ca9e7     us=0 gb=1
+
+1 check failed
