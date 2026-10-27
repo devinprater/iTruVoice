@@ -5,13 +5,23 @@ as an iOS app with system-wide voices, via
 [OpenTV](https://github.com/RetroBunn/tv-decomp) — a portable-C decompilation
 verified byte-for-byte against the 1997 binary.
 
-Install the app and thirty-three voices appear for VoiceOver and Spoken
+Install the app and forty-three voices appear for VoiceOver and Spoken
 Content: eleven American English -- Peter, Sidney, Eager Eddie, Deep Douglas,
 Biff, Grandpa Amos, Melvin, Alex, Wanda, Julia and Frank -- eleven Spanish --
 Pedro, Jorge, Ricardo, Paco, Luis, Ezequiel, Rogelio, Carlos, Josefa, Isabel
-and Francisco -- and eleven British English -- Nigel, Clive, Eager Edwin,
-Deep Duncan, Rupert, Gramps Amos, Malcolm, Alistair, Fiona, Imogen and
-Bernard.
+and Francisco -- ten Japanese -- Taro, Tsuyoshi, Kenta, Daichi, Takeshi,
+Ojiisan, Osamu, Akira, Hanako and Keiko -- and eleven British English --
+Nigel, Clive, Eager Edwin, Deep Duncan, Rupert, Gramps Amos, Malcolm,
+Alistair, Fiona, Imogen and Bernard.
+
+Japanese is not a decompilation -- there is no Japanese TruVoice to reproduce
+-- so its front end is built from the phonetics literature and drives the
+synthesiser below stage 3. It reads a 27 MB morphological dictionary,
+`jadic.bin`, from disk: with it, kanji, numbers and romaji all read; without
+it the engine still speaks kana but drops every kanji and spells romaji out,
+silently. The app ships the dictionary at the app's root and
+`TruVoiceKit.configureJapaneseDictionary` points the engine at it from both
+the app and the provider extension.
 
 British English is the same engine with stage 3 re-aimed at General British
 vowel targets and the accent's phoneme substitutions applied, not a separate
@@ -41,6 +51,9 @@ the system files them under English (United Kingdom).
   the engine proof on every build: each corpus line must produce non-silent
   audio with exactly the recorded sample count. `tools/corpus_gb.txt` and its
   golden do the same on an en-GB synth.
+- `tools/bundle_ja_dict.sh` — copies the Japanese dictionary from the pinned
+  submodule into the packaged `.app` and verifies the bytes. Both workflows
+  run it after the build.
 - `tools/gb_check.py` — upstream's own `tests/gb_check.c` against the pinned
   engine: the accent reaches the formants, American is untouched, and the /r/
   rules hold. Its output is recorded, so a change is a diff to read.

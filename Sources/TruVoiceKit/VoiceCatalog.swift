@@ -64,9 +64,13 @@ public enum VoiceCatalog {
 
     /// Sample text in the voice's own language, for the app's audition field.
     public static func sampleText(for index: Int) -> String {
-        if voice(at: index)?.language.hasPrefix("es") == true {
+        switch voice(at: index)?.language {
+        case let language? where language.hasPrefix("es"):
             return "Hola mundo. Esta es la voz TruVoice."
+        case "ja-JP":
+            return "こんにちは。トゥルーボイスです。"
+        default:
+            return sampleText
         }
-        return sampleText
     }
 }

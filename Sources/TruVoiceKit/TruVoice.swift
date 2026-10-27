@@ -30,17 +30,21 @@ public final class TruVoice {
         public let locale: String     // BCP-47 for the host: en-US, es-ES, en-GB
     }
 
-    /// The thirty-three voices the app offers, in engine order.
+    /// The forty-three voices the app offers, in engine order.
     ///
     /// The numbers are the engine's own and run across every language, so a
     /// number is not a position in this array: English is 0 through 10
     /// (Peter, the voice the phoneme tables were written for, through Frank,
     /// who joined at 10 upstream 2026-10-01); Spanish 11 through 21 (Pedro
-    /// through Francisco); Japanese 22 through 31; British English 32
-    /// through 42 (Nigel through Bernard). Japanese is compiled into the
-    /// library and not offered -- its front end needs the 27 MB dictionary
-    /// upstream reads from disk at runtime, which is not vendored -- so this
-    /// table skips 22 through 31.
+    /// through Francisco); Japanese 22 through 31 (Taro through Keiko);
+    /// British English 32 through 42 (Nigel through Bernard).
+    ///
+    /// Japanese is not a decompilation -- there is no Japanese TruVoice to
+    /// reproduce -- and its front end reads a 27 MB morphological dictionary,
+    /// jadic.bin, from disk. The dictionary ships in the app bundle and
+    /// `configureJapaneseDictionary` points the engine at it; without it the
+    /// engine still speaks kana but silently drops every kanji and spells
+    /// romaji out letter by letter.
     ///
     /// British English is not a new vocal tract. Upstream re-aims stage 3's
     /// vowel targets at Cruttenden's General British set and applies the
@@ -72,6 +76,16 @@ public final class TruVoice {
         VoiceSpec(index: 19, name: "Josefa", language: "es", locale: "es-ES"),
         VoiceSpec(index: 20, name: "Isabel", language: "es", locale: "es-ES"),
         VoiceSpec(index: 21, name: "Francisco", language: "es", locale: "es-ES"),
+        VoiceSpec(index: 22, name: "Taro", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 23, name: "Tsuyoshi", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 24, name: "Kenta", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 25, name: "Daichi", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 26, name: "Takeshi", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 27, name: "Ojiisan", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 28, name: "Osamu", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 29, name: "Akira", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 30, name: "Hanako", language: "ja", locale: "ja-JP"),
+        VoiceSpec(index: 31, name: "Keiko", language: "ja", locale: "ja-JP"),
         VoiceSpec(index: 32, name: "Nigel", language: "en-GB", locale: "en-GB"),
         VoiceSpec(index: 33, name: "Clive", language: "en-GB", locale: "en-GB"),
         VoiceSpec(index: 34, name: "Eager Edwin", language: "en-GB", locale: "en-GB"),
@@ -105,7 +119,37 @@ public final class TruVoice {
     private var synth: OpaquePointer?
     private let voiceIndex: Int
 
+    /// Points the engine at jadic.bin in the bundle, once per process.
+    ///
+    /// The Japanese front end reads the dictionary from disk: it tries
+    /// TVTTS_JA_DICT first, then beside the loaded module, then beside the
+    /// executable. The file ships once, at the app's root (27 MB), and is
+    /// found from the app through Bundle.main and from the provider extension
+    /// by walking out of PlugIns/TruVoiceProvider.appex.
+    ///
+    /// Without it the engine still speaks kana; it silently drops every kanji
+    /// and spells romaji out letter by letter, so the file has to be beside
+    /// the code that speaks. A variable the host already set wins.
+    private static let japaneseDictionary: Bool = {
+        guard ProcessInfo.processInfo.environment["TVTTS_JA_DICT"] == nil else { return true }
+        let bundle = Bundle.main.bundleURL
+        let candidates = [
+            bundle.appendingPathComponent("jadic.bin"),
+            bundle.deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("jadic.bin"),
+        ]
+        for url in candidates where FileManager.default.fileExists(atPath: url.path) {
+            setenv("TVTTS_JA_DICT", url.path, 0)
+            return true
+        }
+        return false
+    }()
+
     public init?(voice: Int) {
+        // Before create: the dictionary is read lazily on the first Japanese
+        // utterance, and only the environment variable says where it is when
+        // the app and the extension keep it in different bundles.
+        _ = Self.japaneseDictionary
         guard let spec = Self.spec(forVoice: voice),
               let s = tvtts_create_lang(TruVoice.sampleRate, spec.language) else { return nil }
         synth = s

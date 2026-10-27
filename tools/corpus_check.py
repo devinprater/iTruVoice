@@ -187,20 +187,21 @@ def build(workdir):
     return exe
 
 
-def run(exe, lines, rate="11025", voice="0", lang=None):
+def run(exe, lines, rate="11025", voice="0", lang=None, env=None):
     argv = [exe, rate, voice]
     if lang:
         argv.append(lang)
     p = subprocess.run(argv, input="\n".join(lines) + "\n",
-                       capture_output=True, text=True, check=True)
+                       capture_output=True, text=True, check=True,
+                       env=env)
     return p.stdout.splitlines()
 
 
-def check_one(exe, corpus, golden, record, lang=None, voice="0"):
+def check_one(exe, corpus, golden, record, lang=None, voice="0", env=None):
     with open(os.path.join(HERE, corpus)) as f:
         lines = [ln.strip() for ln in f if ln.strip()]
     # (line, total samples, nonzero chunks, rc); nonzero chunks > 0 is audible.
-    out = run(exe, lines, voice=voice, lang=lang)
+    out = run(exe, lines, voice=voice, lang=lang, env=env)
     golden_path = os.path.join(HERE, golden)
     if record:
         with open(golden_path, "w") as f:
@@ -232,6 +233,13 @@ def main():
     ok = check_one(exe, "corpus.txt", "corpus_golden.txt", args.record)
     ok &= check_one(exe, "corpus_gb.txt", "corpus_gb_golden.txt", args.record,
                     lang="en-GB")
+    # Japanese reads its dictionary from disk; pointing the engine at the
+    # pinned one is what this run proves. Without it the kanji lines come out
+    # short and the romaji line spells its letters, so the golden holds both.
+    ja_env = dict(os.environ,
+                  TVTTS_JA_DICT=os.path.join(UP, "lang", "jpn", "data", "jadic.bin"))
+    ok &= check_one(exe, "corpus_ja.txt", "corpus_ja_golden.txt", args.record,
+                    lang="ja", env=ja_env)
     if not ok:
         sys.exit(1)
 

@@ -87,6 +87,10 @@ jobs:
           set -euo pipefail
           xtool dev build
           test -d xtool/*.app || { echo "::error::no .app was produced"; exit 1; }
+          # Japanese reads its 27 MB dictionary from disk, so it has to be in
+          # the bundle; the script copies it from the pinned submodule and
+          # verifies the bytes.
+          bash tools/bundle_ja_dict.sh "$(echo xtool/*.app)"
 
       - name: Stamp the version the About screen will show
         run: |
@@ -115,6 +119,11 @@ jobs:
           # The engine made it into the link.
           nm "$APP_BIN" | grep -q 'tvtts_speak_utf8' \
             || { echo "::error::engine symbols missing from the app"; exit 1; }
+          # Japanese's dictionary is at the app root, beside the executable
+          # and two levels up from the extension's. Without it kanji are
+          # silently dropped.
+          test -f "$(echo xtool/*.app)/jadic.bin" \
+            || { echo "::error::jadic.bin is not in the app bundle"; exit 1; }
           # The provider extension rode along.
           test -d xtool/*.app/PlugIns/TruVoiceProvider.appex \
             || { echo "::error::provider extension not embedded"; exit 1; }

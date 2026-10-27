@@ -5,10 +5,9 @@
 # the script prints. Format: "<language code> <voice count>".
 en 11
 es 11
-# Japanese is compiled and not offered: its front end needs the 27 MB
-# jadic.bin, which upstream loads from disk at runtime, so iTruVoice does not
-# vendor it. Its ten voices sit at engine indices 22..31 and are absent from
-# VoiceCatalog; British English starts at 32 because the numbering runs across
-# every language.
+# Japanese is offered at engine indices 22..31; its front end needs the 27 MB
+# jadic.bin, which ships in the app bundle and is found through
+# TVTTS_JA_DICT (tools/bundle_ja_dict.sh puts it there). British English
+# starts at 32 because the numbering runs across every language.
 ja 10
 en-GB 11

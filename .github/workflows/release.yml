@@ -82,6 +82,9 @@ jobs:
           unzip -q "$IPA" -d "$WORK"
           APP="$(find "$WORK/Payload" -maxdepth 2 -name '*.app' -type d | head -1)"
           test -n "$APP" || { echo "::error::no .app in the ipa"; exit 1; }
+          # The Japanese dictionary rides at the app's root, where TruVoiceKit
+          # sets TVTTS_JA_DICT to it from both the app and the extension.
+          bash tools/bundle_ja_dict.sh "$APP"
           # Sideloading tools re-sign with their own identity, so the build's
           # signature and profile must go: they would only conflict.
           find "$APP" -name '*.mobileprovision' -delete
@@ -132,6 +135,8 @@ jobs:
           # without it installs and then has no voices at all.
           unzip -l "$IPA" | grep -q 'PlugIns/TruVoiceProvider.appex/TruVoiceProvider' \
             || { echo "::error::the provider extension is not embedded"; exit 1; }
+          unzip -l "$IPA" | grep -qE 'Payload/[^/]+\.app/jadic\.bin' \
+            || { echo "::error::the Japanese dictionary is not in the ipa"; exit 1; }
           # The extension must be installable (see build.yml): no raw
           # variables in its plist, and its ID under the app's.
           PLIST_TMP="$RUNNER_TEMP/appex-plists"

@@ -83,7 +83,7 @@ struct ContentView: View {
                 }
 
                 Section {
-                    Text("Install this app, then find the English voices (Peter through Frank), the Spanish voices (Pedro through Francisco) and the British English voices (Nigel through Bernard) in VoiceOver or Spoken Content settings. The British voices are listed under English (United Kingdom).")
+                    Text("Install this app, then find the English voices (Peter through Frank), the Spanish voices (Pedro through Francisco), the Japanese voices (Taro through Keiko) and the British English voices (Nigel through Bernard) in VoiceOver or Spoken Content settings. The British voices are listed under English (United Kingdom); the Japanese ones under Japanese.")
                 } header: {
                     Text("System voices")
                         .textCase(nil)
@@ -100,6 +100,11 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("iTruVoice")
+            // The preview text follows the voice: a Japanese voice reading the
+            // English sample would say nothing useful about it.
+            .onChange(of: audioManager.selectedVoice) { _, voice in
+                text = VoiceCatalog.sampleText(for: voice)
+            }
         }
     }
 
